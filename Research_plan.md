@@ -1,63 +1,102 @@
-# Edge-Native Security for IoT
+# Cross-Protocol Behavioral Anomaly Detection at the Edge
 
-## A Lightweight Multi-Stage AI Reverse Proxy for MQTT
+## A Lightweight AI Reverse Proxy for Heterogeneous IoT Protocols
 
 ---
 
-# 1. Research Scope (Narrowed)
+# 1. Research Scope
 
-This research will focus exclusively on:
+This research will focus on:
 
-- **Protocol:** MQTT
-- **Backend Broker:** Eclipse Mosquitto
-- **Deployment Model:** Standalone reverse proxy (no modification to broker internals)
+- **Protocols:** MQTT (v3.1.1, v5.0 stretch), CoAP (RFC 7252)
+- **Backend Brokers:** Eclipse Mosquitto (MQTT), Eclipse Californium (CoAP)
+- **Deployment Model:** Per-protocol reverse proxy instances, each sitting in front of its native broker — no protocol translation, no broker modification
+- **Core Innovation:** A **protocol-normalized behavioral feature abstraction layer** that maps heterogeneous protocol semantics into a unified feature space, enabling a single ML detection model to operate across protocols
 
-CoAP and other protocols are explicitly excluded from the current scope and may be considered future work.
+**Future protocol targets (explicitly out of scope for now):** AMQP, HTTP/WebSocket, LwM2M, OPC-UA.
+
+### 1.1 Why MQTT and CoAP?
+
+MQTT and CoAP represent the two dominant — and architecturally contrasting — IoT messaging paradigms:
+
+| Property         | MQTT                               | CoAP                           |
+| ---------------- | ---------------------------------- | ------------------------------ |
+| Transport        | TCP (persistent, stateful)         | UDP (stateless, per-request)   |
+| Pattern          | Publish/Subscribe                  | Request/Response (+ Observe)   |
+| Connection Model | Long-lived sessions                | Transactionless datagrams      |
+| QoS              | 0, 1, 2 (broker-managed)           | Confirmable / Non-confirmable  |
+| Security         | TLS                                | DTLS                           |
+| State            | Per-client session state in broker | Stateless (tokens per request) |
+
+These architectural differences make them ideal candidates for validating that protocol-normalized behavioral features can generalize across fundamentally different IoT communication models.
 
 ---
 
 # 2. Core Research Objective
 
-Design and evaluate a **protocol-aware, multi-stage AI reverse proxy** deployed in front of an MQTT broker that:
+Design and evaluate a **protocol-aware, multi-stage AI reverse proxy architecture** that:
 
-1. Detects application-layer attacks in real time
-2. Maintains low latency overhead
-3. Operates within constrained edge environments
-4. Requires zero modification to the broker
+1. Detects application-layer attacks across MQTT and CoAP in real time
+2. Normalizes protocol-heterogeneous behaviors into a **unified behavioral feature space** — without protocol translation or broker modification
+3. Maintains low latency overhead on both TCP (MQTT) and UDP (CoAP) paths
+4. Operates within constrained edge environments
+5. Is **extensible** to additional IoT protocols via the normalization abstraction
 
-This research proposes and rigorously evaluates a **standalone, protocol-aware, multi-stage AI reverse proxy for MQTT** that enables real-time mitigation of application-layer attacks at the network edge without modifying broker internals.
+This research proposes and rigorously evaluates a **standalone, protocol-aware, multi-stage AI reverse proxy** that enables real-time mitigation of application-layer attacks across heterogeneous IoT protocols at the network edge.
 
 The central hypothesis is:
 
-> A protocol-aware, multi-stage detection architecture deployed as an external reverse proxy can achieve high application-layer attack detection performance while introducing only marginal latency and resource overhead compared to a native MQTT broker.
+> A protocol-aware reverse proxy that normalizes behavioral features across heterogeneous IoT protocols (MQTT over TCP, CoAP over UDP) can achieve high detection performance with minimal latency overhead, **without requiring protocol translation or broker modification**, using a single unified ML detection model.
 
-The work seeks to formally quantify the **security–performance tradeoff** introduced by edge-native AI-based inspection in IoT environments.
+The work seeks to formally quantify:
+
+- The **security–performance tradeoff** introduced by edge-native AI-based inspection
+- The **generalization capability** of protocol-normalized behavioral features across fundamentally different IoT communication models
+- The **extensibility cost** of adding new protocols to the normalization framework
 
 # 2.5 Threat Model
 
 ## Adversary Capabilities
 
-- Network-level: Can send arbitrary MQTT packets to the broker's port
-- Application-level: Can craft valid or malformed MQTT control packets
+- Network-level: Can send arbitrary MQTT or CoAP packets to the respective proxy's port
+- Application-level: Can craft valid or malformed protocol control packets for either protocol
 - No physical access to the broker or proxy host
+- Adversary does **not** need to know which protocol is being proxied — attacks are protocol-native
 
-## Attack Taxonomy (Targeted)
+## Attack Taxonomy (Cross-Protocol)
 
-1. **Volumetric:** Publish flood, connection exhaustion
-2. **Protocol abuse:** Malformed packets, oversized payloads, rapid re-auth
-3. **Semantic:** Topic squatting, payload injection with valid structure
-4. **Slow-rate:** Low-and-slow DoS (e.g., SlowITe for MQTT)
-5. **MQTT-Specific Exploits:**
-   - **SlowITe** — Slow CONNECT attack exploiting MQTT keep-alive timer
-   - **Wildcard subscription abuse** — Using `#` or `+` wildcards to exfiltrate data across topics
-   - **QoS exploitation** — Abusing QoS 2 four-step handshake for amplification
-   - **Will message abuse** — Crafting malicious Last Will and Testament (LWT) payloads
-   - **Client ID spoofing** — Reusing or hijacking client identifiers to disrupt sessions
+### Common Attack Classes (Both Protocols)
+
+| Attack Class       | MQTT Manifestation                    | CoAP Manifestation                            |
+| ------------------ | ------------------------------------- | --------------------------------------------- |
+| **Volumetric**     | PUBLISH flood, CONNECT flood          | Request flood (CON/NON spam)                  |
+| **Protocol abuse** | Malformed packets, oversized payloads | Malformed options, invalid tokens             |
+| **Semantic**       | Topic squatting, payload injection    | Resource path manipulation, payload injection |
+| **Slow-rate**      | SlowITe (slow CONNECT)                | Slow Observe registration, CON without ACK    |
+| **Amplification**  | QoS 2 handshake abuse                 | Observe notification amplification            |
+
+### MQTT-Specific Exploits
+
+- **SlowITe** — Slow CONNECT attack exploiting MQTT keep-alive timer
+- **Wildcard subscription abuse** — Using `#` or `+` wildcards to exfiltrate data across topics
+- **QoS exploitation** — Abusing QoS 2 four-step handshake for amplification
+- **Will message abuse** — Crafting malicious Last Will and Testament (LWT) payloads
+- **Client ID spoofing** — Reusing or hijacking client identifiers to disrupt sessions
+
+### CoAP-Specific Exploits
+
+- **Amplification via Observe** — Registering Observe on high-frequency resources to amplify traffic
+- **Token exhaustion** — Rapidly cycling tokens to exhaust server tracking state
+- **Block-wise transfer abuse** — Incomplete Block2 transfers to waste server resources
+- **Resource discovery abuse** — Flooding `/.well-known/core` to map and probe resources
+- **Confirmable flood** — Sending CON messages with spoofed source IPs to trigger ACK amplification
+- **Proxy-forward abuse** — Crafting Proxy-Uri options to turn CoAP servers into open proxies
 
 ## Trust Boundaries
 
 - IoT devices are **untrusted**
-- Proxy ↔ Broker link is **trusted** (localhost or secured channel)
+- Each proxy ↔ its backend broker link is **trusted** (localhost or secured channel)
+- MQTT proxy and CoAP proxy operate **independently** — no cross-protocol trust assumptions
 - Dashboard is read-only and behind authentication
 
 ---
@@ -66,20 +105,71 @@ The work seeks to formally quantify the **security–performance tradeoff** intr
 
 ## 3.1 High-Level Architecture
 
-IoT Devices → C++ AI Proxy → Mosquitto Broker → Cloud
-↓
-Next.js Monitoring Dashboard
+```
+                    ┌─────────────────────────────────────────────────┐
+                    │              Edge Node                          │
+                    │                                                 │
+MQTT Devices ──TCP──▶ [MQTT Proxy] ──TCP──▶ Mosquitto Broker          │
+                    │      │                                          │
+                    │      ▼                                          │
+                    │  ┌────────────────────┐                         │
+                    │  │ Normalized Feature │ ──▶ Unified ML Model    │
+                    │  │   Abstraction Layer│                         │
+                    │  └────────────────────┘                         │
+                    │      ▲                                          │
+                    │      │                                          │
+CoAP Devices ──UDP──▶ [CoAP Proxy] ──UDP──▶ Californium Server        │
+                    │                                                 │
+                    │      ┌──────────────────────┐                   │
+                    │      │ Next.js Dashboard    │ ◀── Metrics API   │
+                    └──────┴──────────────────────┴───────────────────┘
+```
 
-## 3.2 Proxy Responsibilities
+**Key architectural decision:** Each protocol gets its own dedicated proxy process. There is **no protocol translation** — MQTT traffic stays MQTT, CoAP traffic stays CoAP. The proxies share only the normalized behavioral feature space and the ML detection model.
 
-The proxy will:
+## 3.2 Proxy Responsibilities (Per-Protocol Instance)
 
-- Intercept all MQTT traffic
-- Parse MQTT control packets
-- Extract protocol-aware features
-- Run multi-stage detection
-- Forward or mitigate traffic
+Each protocol proxy will:
+
+- Intercept all protocol-native traffic (TCP for MQTT, UDP for CoAP)
+- Parse protocol-specific control packets
+- Extract protocol-specific raw features
+- **Normalize** features into the unified behavioral feature vector
+- Run the shared multi-stage detection pipeline
+- Forward or mitigate traffic using protocol-appropriate actions
 - Log metrics for analysis and visualization
+
+## 3.3 Protocol Normalization Layer (Core Innovation)
+
+The normalization layer maps protocol-specific semantics into **abstract behavioral dimensions** that are meaningful across protocols:
+
+```
+Protocol-Specific Features ──▶ Normalization Layer ──▶ Unified Behavioral Vector ──▶ ML Model
+```
+
+### Normalization Mapping
+
+| Abstract Behavioral Dimension | MQTT Source                           | CoAP Source                        |
+| ----------------------------- | ------------------------------------- | ---------------------------------- |
+| `msg_rate`                    | PUBLISH rate                          | Request rate (GET/PUT/POST)        |
+| `inter_arrival_time`          | Time between PUBLISHes                | Time between requests              |
+| `payload_size`                | PUBLISH payload bytes                 | Request/response payload bytes     |
+| `payload_entropy`             | Shannon entropy of PUBLISH payload    | Shannon entropy of request payload |
+| `resource_path_depth`         | Topic depth (`/` count)               | URI-Path option depth (`/` count)  |
+| `resource_path_entropy`       | Shannon entropy of topic string       | Shannon entropy of URI-Path        |
+| `qos_level`                   | MQTT QoS (0/1/2) → normalized 0.0–1.0 | CON/NON → normalized 0.0/1.0       |
+| `session_duration`            | CONNECT to DISCONNECT time            | Observation window duration        |
+| `unique_resource_count`       | Unique topics per client              | Unique URI-Paths per source IP     |
+| `error_rate`                  | Invalid packet ratio / CONNACK errors | 4.xx/5.xx response ratio           |
+| `handshake_complexity`        | QoS 2 handshake steps initiated       | CON/ACK exchange ratio             |
+| `subscription_breadth`        | Wildcard subscription scope           | Observe registration count         |
+| `reconnection_rate`           | CONNECT frequency                     | New token generation rate          |
+| `payload_to_resource_ratio`   | Payload size / topic length           | Payload size / URI-Path length     |
+| `protocol_compliance_score`   | Valid MQTT packet ratio               | Valid CoAP option format ratio     |
+
+The normalization layer also appends a **one-hot protocol identifier** (`[1,0]` for MQTT, `[0,1]` for CoAP) so the model can optionally learn protocol-specific patterns.
+
+> **Extensibility:** Adding a new protocol requires only implementing a new protocol parser and defining the normalization mapping from that protocol's features to the abstract dimensions. The ML model and detection pipeline remain unchanged.
 
 ---
 
@@ -87,62 +177,103 @@ The proxy will:
 
 ## Stage 1: Fast Rule-Based Filter
 
-Lightweight, constant-time checks:
+Lightweight, constant-time checks applied to the **normalized feature vector** (protocol-agnostic) plus protocol-specific rules:
 
-- Payload size threshold
-- Publish rate anomaly
+### Cross-Protocol Rules (Applied to Normalized Features)
+
+- `msg_rate` > threshold → rate anomaly
+- `payload_size` > threshold → oversized payload
+- `payload_entropy` < threshold → suspicious constant payload
+- `resource_path_entropy` anomaly → resource scanning heuristic
+- `reconnection_rate` > threshold → connection abuse
+
+### MQTT-Specific Rules
+
 - Topic blacklist check
-- Topic entropy heuristic
-- Connection burst detection
+- Wildcard subscription depth check (`#`, `+`)
+- Keep-alive violation detection (SlowITe signature)
+- Client ID format validation
 
-Goal: Filter obvious malicious traffic with negligible overhead.
+### CoAP-Specific Rules
+
+- `/.well-known/core` request rate limit
+- Block-wise transfer completion tracking
+- Observe registration rate cap
+- Proxy-Uri option presence (open proxy abuse)
+- Token format/length validation
+
+Goal: Filter obvious malicious traffic with negligible overhead, leveraging both normalized and protocol-specific signals.
 
 ## Stage 2: Lightweight ML Classifier
 
-### Feature Set (Protocol-Aware)
+### Feature Set Architecture
 
-**Basic Packet Features:**
+The feature vector fed to the ML model consists of three layers:
 
-- Topic length
-- Payload length
-- Publish frequency
-- Inter-arrival time
-- QoS level
-- Retain flag
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ Layer 1: Normalized Behavioral Features (15 dims, shared)       │
+├─────────────────────────────────────────────────────────────────┤
+│ Layer 2: Protocol Identifier (one-hot, 2 dims for now)          │
+├─────────────────────────────────────────────────────────────────┤
+│ Layer 3: Protocol-Specific Auxiliary Features (variable dims)   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Layer 1: Normalized Behavioral Features (Cross-Protocol)
+
+These are the 15 abstract behavioral dimensions from Section 3.3, computed identically regardless of source protocol:
+
+- `msg_rate` — Messages per second
+- `inter_arrival_time` — Mean time between messages
+- `payload_size` — Payload byte count
+- `payload_entropy` — Shannon entropy of payload bytes
+- `resource_path_depth` — Hierarchical depth of target resource
+- `resource_path_entropy` — Shannon entropy of resource identifier
+- `qos_level` — Delivery guarantee level (normalized 0.0–1.0)
+- `session_duration` — Time span of current behavioral window
+- `unique_resource_count` — Distinct resources targeted
+- `error_rate` — Protocol error ratio
+- `handshake_complexity` — Delivery handshake overhead
+- `subscription_breadth` — Scope of data subscription
+- `reconnection_rate` — Session re-establishment frequency
+- `payload_to_resource_ratio` — Payload size relative to resource identifier
+- `protocol_compliance_score` — Ratio of well-formed to total packets
+
+### Layer 2: Protocol Identifier
+
+- One-hot encoding: `[1,0]` = MQTT, `[0,1]` = CoAP
+- Allows the model to learn protocol-conditional patterns when beneficial
+- Future protocols extend this vector (e.g., `[0,0,1]` for AMQP)
+
+### Layer 3: Protocol-Specific Auxiliary Features
+
+**MQTT-Specific (8 dims):**
+
+- Retain flag (binary)
+- Wildcard subscription depth (`#`/`+` count)
+- CONNECT/DISCONNECT ratio
+- Keep-alive timer value (normalized)
+- Will message presence (binary)
+- QoS 2 handshake completion ratio
+- Client ID entropy
 - Message size variance
 
-**Per-Client Temporal Features:**
+**CoAP-Specific (8 dims):**
 
-- Session duration
-- CONNECT/DISCONNECT ratio
-- Average session lifetime
-- Reconnection frequency
-- Time since last message
+- Message type distribution (CON/NON/ACK/RST ratios — 4 values)
+- Observe registration flag (binary)
+- Block-wise transfer in-progress (binary)
+- Token reuse ratio
+- Option count per message
 
-**Topic Behavioral Features:**
+> **Note:** Auxiliary features are zero-padded for the non-matching protocol. E.g., when processing CoAP traffic, the 8 MQTT auxiliary dims are all 0. This ensures a fixed-size input vector.
 
-- Unique topic count per client
-- Topic depth (number of `/` separators)
-- Wildcard usage (`#`, `+`) in subscriptions
-- Topic entropy (Shannon entropy of topic string)
+### Total Feature Vector Size
 
-**Cross-Client Features:**
+`15 (normalized) + 2 (protocol ID) + 8 (MQTT aux) + 8 (CoAP aux) = 33 dimensions`
 
-- Number of clients publishing to same topic
-- Topic collision rate
-- Concurrent connection count
-
-**Payload Statistical Features:**
-
-- Shannon entropy of payload bytes
-- Payload byte distribution histogram (compressed)
-- Payload-to-topic size ratio
-
-**Protocol Compliance Features:**
-
-- Invalid packet ratio per client
-- Out-of-order control packet count
-- Keep-alive violation count
+Adding a new protocol adds its auxiliary features + extends the one-hot vector. The normalized 15 dimensions remain stable.
 
 ### Candidate Models
 
@@ -152,23 +283,49 @@ Goal: Filter obvious malicious traffic with negligible overhead.
 
 Selection criteria:
 
-- Detection accuracy
-- F1 score
+- Detection accuracy (overall and **per-protocol**)
+- F1 score (macro, per-attack-class, **per-protocol**)
 - Inference latency
 - Memory footprint
+- **Cross-protocol generalization** — train on MQTT+CoAP jointly, measure per-protocol performance
 
 Model will be exported to ONNX or lightweight C++ inference runtime.
 
+### Key Experiment: Cross-Protocol Generalization
+
+To validate the normalization layer, we will evaluate:
+
+1. **Joint model** — Single model trained on both MQTT + CoAP normalized features
+2. **Protocol-specific models** — Separate models per protocol (baseline)
+3. **Transfer test** — Train on MQTT only, test on CoAP (and vice versa) to measure zero-shot cross-protocol transfer via normalized features
+
+This directly tests the central hypothesis.
+
 ## Stage 3: Adaptive Mitigation
 
-Actions:
+Actions are protocol-aware:
+
+**Cross-Protocol Actions:**
 
 - Forward traffic
 - Drop packet
-- Rate limit client
-- Temporary client quarantine
+- Rate limit client/source
+- Temporary quarantine
 
-Mitigation decisions will be logged for evaluation.
+**MQTT-Specific Actions:**
+
+- Force DISCONNECT
+- Reject SUBSCRIBE (wildcard filter)
+- Downgrade QoS
+
+**CoAP-Specific Actions:**
+
+- Send RST (reset) message
+- Reject Observe registration
+- Return 4.01 Unauthorized / 4.29 Too Many Requests
+- Silently drop (no ACK for CON)
+
+Mitigation decisions will be logged with protocol tag for per-protocol evaluation.
 
 ---
 
@@ -176,38 +333,44 @@ Mitigation decisions will be logged for evaluation.
 
 ## 5.1 Dataset Options
 
-- BoT-IoT dataset (network-flow level; requires MQTT feature extraction from raw pcaps)
+- BoT-IoT dataset (network-flow level; requires feature extraction from raw pcaps)
 - CIC IoT dataset (network-flow level; same extraction requirement)
-- **Custom MQTT traffic simulation (primary — see 5.3)**
+- **Custom multi-protocol traffic simulation (primary — see 5.3)**
 
-> **Note:** BoT-IoT and CIC IoT are not MQTT-specific. They operate at the network-flow level and lack application-layer MQTT features. The custom testbed dataset is the primary data source; public datasets serve as supplementary baselines.
+> **Note:** BoT-IoT and CIC IoT are not protocol-specific. They operate at the network-flow level and lack application-layer MQTT/CoAP features. The custom testbed dataset is the primary data source; public datasets serve as supplementary baselines.
 
 ## 5.2 Training Workflow
 
-1. Collect MQTT traffic from custom testbed (see 5.3)
-2. Extract MQTT-level features per the feature set defined in Section 4
-3. Label traffic using ground-truth attack scripts
-4. Train candidate models in Python (scikit-learn, LightGBM)
-5. Evaluate with 5-fold stratified cross-validation
-6. Apply model compression (quantization/pruning)
-7. Export optimized model to ONNX for C++ inference
+1. Collect MQTT traffic from custom MQTT testbed
+2. Collect CoAP traffic from custom CoAP testbed
+3. Extract protocol-specific raw features per protocol parser
+4. **Apply normalization mapping** to produce unified behavioral feature vectors
+5. Label traffic using ground-truth attack scripts
+6. Combine MQTT and CoAP normalized datasets with protocol identifier tags
+7. Train candidate models on the **combined** normalized dataset
+8. Evaluate with 5-fold stratified cross-validation (**stratified by both attack class and protocol**)
+9. Run cross-protocol generalization experiments (Section 4, Key Experiment)
+10. Apply model compression (quantization/pruning)
+11. Export optimized model to ONNX for C++ inference
 
-## 5.3 Custom MQTT Testbed
+## 5.3 Custom Multi-Protocol Testbed
 
-Build a reproducible testbed for labeled dataset generation:
+Build a reproducible testbed for labeled dataset generation across both protocols:
+
+### MQTT Testbed
 
 ```
-MQTT Clients (Eclipse Paho) → AI Proxy → Mosquitto Broker
+MQTT Clients (Eclipse Paho) → MQTT AI Proxy → Mosquitto Broker
        ↑
   Attack Scripts (mqtt-pwn, custom Python scripts)
 ```
 
-**Benign traffic generation:**
+**Benign MQTT traffic:**
 
 - Simulated IoT sensors (temperature, humidity, motion) publishing on realistic topic hierarchies
 - Varying publish rates, QoS levels, and payload sizes
 
-**Attack traffic generation:**
+**MQTT attack traffic:**
 
 - Publish flood (high-rate PUBLISH from multiple clients)
 - SlowITe (slow CONNECT with extended keep-alive)
@@ -216,46 +379,79 @@ MQTT Clients (Eclipse Paho) → AI Proxy → Mosquitto Broker
 - Wildcard subscription abuse (`#` subscription to exfiltrate)
 - QoS 2 amplification (incomplete PUBREL handshakes)
 
-**Labeling:** Each attack script tags its traffic window with ground-truth labels. Proxy logs are post-processed to create the labeled feature dataset.
+### CoAP Testbed
+
+```
+CoAP Clients (libcoap / aiocoap) → CoAP AI Proxy → Californium Server
+       ↑
+  Attack Scripts (custom Python scripts using aiocoap/scapy)
+```
+
+**Benign CoAP traffic:**
+
+- Simulated IoT sensors reporting via GET/PUT/POST to realistic URI paths (e.g., `/sensors/temp`, `/actuators/valve`)
+- Mix of CON and NON messages
+- Periodic Observe registrations for sensor monitoring
+- Block-wise transfers for firmware update simulation
+
+**CoAP attack traffic:**
+
+- Request flood (high-rate CON/NON requests from multiple sources)
+- Amplification via Observe (mass Observe registrations on high-frequency resources)
+- Token exhaustion (rapidly cycling unique tokens)
+- Block-wise transfer abuse (incomplete Block2 sequences)
+- Resource discovery flood (`/.well-known/core` abuse)
+- Confirmable flood with spoofed source (ACK amplification)
+- Malformed option injection (invalid option numbers, oversized option values)
+
+**Labeling:** Each attack script tags its traffic window with ground-truth labels **and protocol identifier**. Proxy logs are post-processed through the normalization layer to create the labeled unified feature dataset.
 
 ---
 
 # 6. Implementation Plan
 
-## 6.1 C++ Proxy Core
+## 6.1 C++ Proxy Core (Shared Framework)
 
 ### Architecture Pattern
 
-- Event-driven, single-threaded main loop with `epoll` (Linux) for async I/O
-- Zero-copy buffer management for MQTT packet parsing where possible
-- Stateful per-connection parser (handles fragmented TCP segments correctly)
+Both MQTT and CoAP proxies share a common C++ framework with protocol-specific modules plugged in:
 
-### Core Components
+```
+┌─────────────────────────────────────────────────────────┐
+│             Shared Proxy Framework (C++)                │
+├─────────────────────────────────────────────────────────┤
+│ • Feature Normalization Engine                          │
+│ • ML Inference Engine (ONNX Runtime)                    │
+│ • Rule Engine (cross-protocol rules)                    │
+│ • Metrics Collector & Export                            │
+│ • Mitigation Decision Engine                            │
+├────────────────────────────┬────────────────────────────┤
+│   MQTT Protocol Module     │   CoAP Protocol Module     │
+│ • TCP Listener (epoll)     │ • UDP Listener (recvmmsg)  │
+│ • MQTT Packet Parser       │ • CoAP Message Parser      │
+│ • MQTT Feature Extractor   │ • CoAP Feature Extractor   │
+│ • MQTT-specific rules      │ • CoAP-specific rules      │
+│ • TCP forwarding           │ • UDP forwarding           │
+└────────────────────────────┴────────────────────────────┘
+```
 
-- **TCP Listener:** Accepts inbound connections, manages connection lifecycle
-- **MQTT Packet Parser:** Stateful, streaming parser for MQTT v3.1.1 (v5.0 as stretch goal)
-- **Feature Extraction Module:** Computes per-packet and per-session features defined in Section 4
+### Shared Core Components
+
+- **Feature Normalization Engine:** Maps protocol-specific raw features → unified behavioral vector (Section 3.3)
 - **ML Inference Engine:** ONNX Runtime (C++ API) for neural models; custom native inference for tree models
-- **Routing & Mitigation Logic:** Forward, drop, rate-limit, or quarantine decisions per Stage 3
-- **Metrics Collector:** Aggregates throughput, latency, detection stats for export
+- **Cross-Protocol Rule Engine:** Evaluates normalized feature rules from Stage 1
+- **Mitigation Decision Engine:** Protocol-agnostic decision + protocol-specific action dispatch
+- **Metrics Collector:** Aggregates throughput, latency, detection stats tagged by protocol
 
-### Dependencies
+### MQTT Protocol Module
 
-| Component     | Library                             |
-| ------------- | ----------------------------------- |
-| Networking    | Boost.Asio or raw `epoll`           |
-| ML Inference  | ONNX Runtime C++ API                |
-| Serialization | nlohmann/json or FlatBuffers        |
-| Logging       | spdlog (lock-free, zero-allocation) |
-| Build System  | CMake                               |
+- **TCP Listener:** Event-driven with `epoll` (Linux) for async I/O
+- **MQTT Packet Parser:** Stateful, streaming parser for MQTT v3.1.1 (v5.0 as stretch goal); handles fragmented TCP segments
+- **MQTT Feature Extractor:** Per-packet and per-session MQTT-specific raw features
+- **MQTT-Specific Rules:** Topic blacklists, wildcard checks, SlowITe signatures
+- **TCP Forwarding:** Zero-copy buffer management where possible
 
-### Thread Model
-
-- **Main thread:** Accept connections + I/O event loop + rule-based filtering (Stage 1)
-- **Inference thread(s):** ML inference offloaded if per-packet latency exceeds threshold
-- **Metrics thread:** Periodic stats export via REST endpoint or Unix domain socket
-
-### MQTT Packet Types Handled
+#### MQTT Packet Types Handled
 
 - CONNECT / CONNACK
 - PUBLISH / PUBACK / PUBREC / PUBREL / PUBCOMP
@@ -264,17 +460,82 @@ MQTT Clients (Eclipse Paho) → AI Proxy → Mosquitto Broker
 - PINGREQ / PINGRESP
 - DISCONNECT
 
+### CoAP Protocol Module
+
+- **UDP Listener:** Event-driven with `epoll` on UDP socket; uses `recvmmsg` for batch reception
+- **CoAP Message Parser:** Stateless per-message parser for RFC 7252; handles all message types and option parsing
+- **CoAP Feature Extractor:** Per-message and per-source-IP windowed features
+- **CoAP-Specific Rules:** Resource discovery rate limits, Observe caps, token validation
+- **UDP Forwarding:** Minimal-copy datagram forwarding to Californium backend
+
+#### CoAP Message Types Handled
+
+- CON (Confirmable)
+- NON (Non-confirmable)
+- ACK (Acknowledgement)
+- RST (Reset)
+
+#### CoAP Methods Handled
+
+- GET / POST / PUT / DELETE
+- Observe (RFC 7641)
+- Block-wise transfers (RFC 7959)
+
+### Dependencies
+
+| Component        | Library                                           |
+| ---------------- | ------------------------------------------------- |
+| Networking (TCP) | Boost.Asio or raw `epoll`                         |
+| Networking (UDP) | Raw `epoll` + `recvmmsg`                          |
+| ML Inference     | ONNX Runtime C++ API                              |
+| Serialization    | nlohmann/json or FlatBuffers                      |
+| Logging          | spdlog (lock-free, zero-allocation)               |
+| Build System     | CMake                                             |
+| CoAP parsing ref | libcoap (reference only; custom parser for proxy) |
+
+### Thread Model
+
+- **MQTT I/O thread:** Accept TCP connections + event loop + Stage 1 filtering
+- **CoAP I/O thread:** UDP recv loop + event loop + Stage 1 filtering
+- **Inference thread(s):** Shared ML inference offloaded from both protocol threads
+- **Metrics thread:** Periodic stats export via REST endpoint (serves both protocols)
+
+### Protocol Module Interface (Extensibility)
+
+Each protocol module implements a common C++ interface:
+
+```cpp
+class IProtocolModule {
+public:
+    virtual ~IProtocolModule() = default;
+    virtual void start() = 0;
+    virtual void stop() = 0;
+    // Parse raw bytes into protocol-specific event
+    virtual ProtocolEvent parse(const uint8_t* data, size_t len) = 0;
+    // Extract raw protocol-specific features from event
+    virtual RawFeatureVector extractFeatures(const ProtocolEvent& event) = 0;
+    // Map raw features to normalized behavioral vector
+    virtual NormalizedFeatureVector normalize(const RawFeatureVector& raw) = 0;
+    // Execute protocol-specific mitigation action
+    virtual void mitigate(const MitigationDecision& decision) = 0;
+};
+```
+
+> **Adding a new protocol:** Implement `IProtocolModule` for the new protocol. Register it with the shared framework. Done.
+
 ## 6.2 Dashboard (Next.js)
 
-Displays:
+Displays (with per-protocol breakdown):
 
-- Message throughput
-- Detected attacks
-- Mitigation actions
-- Latency overhead
-- CPU and memory usage
+- Message throughput (MQTT and CoAP, independently and combined)
+- Detected attacks (filterable by protocol, attack class)
+- Mitigation actions (per protocol)
+- Latency overhead (per protocol: TCP vs UDP path)
+- CPU and memory usage (per proxy instance)
+- Cross-protocol correlation view (attacks spanning both protocols)
+- Normalized feature distribution visualization
 
-Dashboard connects to proxy API endpoint.
+Dashboard connects to shared metrics API endpoint that aggregates from both proxy instances.
 
 ---
 
@@ -282,39 +543,54 @@ Dashboard connects to proxy API endpoint.
 
 ## 7.1 Baselines
 
-1. Mosquitto without proxy
-2. Proxy with rule-only detection
-3. Full multi-stage proxy
+1. **No proxy:** Mosquitto + Californium without any proxy
+2. **Rule-only proxy:** Proxy with Stage 1 only (both protocols)
+3. **Protocol-specific models:** Separate ML models per protocol
+4. **Joint model:** Single unified model on normalized features (proposed approach)
+5. **Full multi-stage pipeline:** Rule + ML + mitigation (proposed system)
 
 ## 7.2 Metrics
 
-Security Metrics:
+Security Metrics (reported **per-protocol** and **aggregate**):
 
 - Detection accuracy
 - Precision, Recall, F1 score (macro and per-attack-class)
 - False positive rate (FPR)
 - ROC-AUC curves per model
 - Confusion matrix per model per attack class
+- **Cross-protocol generalization score** (train on one protocol, test on other)
 
-Performance Metrics:
+Performance Metrics (reported **per-protocol**):
 
 - End-to-end latency overhead: **p50, p95, p99** (not just mean)
-- Throughput (messages/sec)
-- CPU utilization
-- Memory usage (RSS, peak)
+- MQTT: connection-to-CONNACK latency, PUBLISH-to-forward latency
+- CoAP: request-to-forward latency, CON-to-ACK overhead
+- Throughput (messages/sec per protocol)
+- CPU utilization (per proxy instance and shared inference)
+- Memory usage (RSS, peak per proxy instance)
+
+Normalization Metrics (novel):
+
+- **Feature distribution alignment** — KL divergence between MQTT and CoAP normalized feature distributions for same attack class
+- **Normalization overhead** — Time to map raw features to normalized vector
 
 ## 7.3 Evaluation Rigor
 
-- **5-fold stratified cross-validation** for all model comparisons
-- **Per-attack-type detection rates** (not just aggregate)
+- **5-fold stratified cross-validation** for all model comparisons (stratified by attack class × protocol)
+- **Per-attack-type detection rates** (not just aggregate), broken down by protocol
 - **Statistical significance testing** between models (McNemar's test or paired t-test)
 - **Ablation study:** measure contribution of each pipeline stage independently
-  - Stage 1 only vs. Stage 1+2 vs. Full pipeline
+  - Stage 1 only vs. Stage 1+2 vs. Full pipeline (per protocol)
+  - Normalized features only vs. normalized + auxiliary features
+  - With vs. without protocol identifier
+- **Cross-protocol transfer study:** Train on Protocol A, test on Protocol B
 - **Resource profiling:** measure inference time per packet for each model
 
 ## 7.4 Stress Testing
 
-Simulate:
+Simulate per protocol:
+
+**MQTT Stress Tests:**
 
 - High-frequency publish flood (10k+ msg/sec)
 - SlowITe attack (slow CONNECT with keep-alive exploitation)
@@ -323,61 +599,90 @@ Simulate:
 - Wildcard subscription abuse (`#` topic exfiltration)
 - QoS 2 amplification (incomplete handshake flood)
 
-Measure degradation curves: throughput vs. attack intensity, latency vs. attack intensity.
+**CoAP Stress Tests:**
+
+- High-frequency request flood (10k+ msg/sec CON + NON)
+- Observe amplification (mass registrations on high-frequency resource)
+- Token exhaustion (rapid unique token generation)
+- Block-wise transfer abuse (incomplete Block2 sequences at scale)
+- Resource discovery flood (`/.well-known/core` at high rate)
+- Confirmable flood with spoofed source IPs
+
+**Cross-Protocol Stress Tests:**
+
+- Simultaneous MQTT + CoAP volumetric attack (measure shared inference thread contention)
+- Mixed benign/malicious across protocols (measure cross-protocol false positive interference)
+
+Measure degradation curves: throughput vs. attack intensity, latency vs. attack intensity — **per protocol and combined**.
 
 ---
 
-# 8. Timeline (10 Weeks)
+# 8. Timeline (12 Weeks)
 
 ## Week 1
 
-- Finalize research objective and threat model
-- Review related work, build comparison table
-- Define feature set
+- Finalize research objective and threat model (MQTT + CoAP)
+- Review related work on cross-protocol IoT security, build comparison table
+- Define normalized behavioral feature set and protocol-specific mappings
 
 ## Week 2
 
 - Set up MQTT testbed (Mosquitto, Paho clients, attack scripts)
-- Build data collection pipeline
-- Begin benign + attack traffic generation
+- Set up CoAP testbed (Californium, aiocoap/libcoap clients, attack scripts)
+- Build data collection pipeline with protocol tagging
 
 ## Week 3
 
-- Complete dataset collection and labeling
-- Feature engineering and extraction pipeline
+- Complete MQTT dataset collection and labeling
+- Complete CoAP dataset collection and labeling
+- Implement and validate normalization mapping (Python prototype)
 
 ## Week 4
 
-- Train candidate models (Random Forest, LightGBM, MLP)
-- 5-fold cross-validation, per-attack-class evaluation
+- Feature engineering: validate normalized feature distributions across protocols
+- Measure feature alignment (KL divergence per dimension per attack class)
+- Build combined normalized dataset
 
 ## Week 5
 
-- Model selection based on accuracy-latency tradeoff
+- Train candidate models (Random Forest, LightGBM, MLP) on combined dataset
+- 5-fold cross-validation, per-attack-class and per-protocol evaluation
+- Cross-protocol transfer experiments
+
+## Week 6
+
+- Model selection based on accuracy-latency-generalization tradeoff
 - Model compression (quantization/pruning)
 - Export to ONNX
 
-## Week 6–7
+## Week 7–8
 
-- Implement C++ proxy core (TCP listener, MQTT parser, feature extraction)
-- Integrate ML inference engine (ONNX Runtime)
-- Implement rule-based filter (Stage 1) and mitigation logic (Stage 3)
-
-## Week 8
-
-- Implement Next.js monitoring dashboard
-- Integration testing (end-to-end proxy + broker + dashboard)
+- Implement shared C++ proxy framework (normalization engine, ML inference, rule engine, metrics)
+- Implement MQTT protocol module (TCP listener, MQTT parser, feature extraction)
+- Implement CoAP protocol module (UDP listener, CoAP parser, feature extraction)
 
 ## Week 9
 
-- Run all experiments and stress tests
-- Collect latency, throughput, detection metrics
-- Generate figures, tables, ROC curves
+- Integration testing: MQTT proxy + Mosquitto, CoAP proxy + Californium
+- End-to-end pipeline validation for both protocols
+- Implement Next.js monitoring dashboard with per-protocol views
 
 ## Week 10
 
+- Run all experiments and stress tests (per-protocol and cross-protocol)
+- Collect latency, throughput, detection metrics
+- Run cross-protocol stress tests
+
+## Week 11
+
+- Generate figures, tables, ROC curves, ablation results
+- Statistical significance testing
+- Cross-protocol generalization analysis
+
+## Week 12
+
 - Write and finalize paper
-- Prepare reproducibility artifacts (Docker, scripts, dataset)
+- Prepare reproducibility artifacts (Docker, scripts, datasets)
 
 ---
 
@@ -385,36 +690,58 @@ Measure degradation curves: throughput vs. attack intensity, latency vs. attack 
 
 1. Introduction
 2. Related Work (include comparison table — see Section 12)
-3. Threat Model
-4. System Architecture
-5. Multi-Stage Detection Design
-6. Model Optimization and Compression
-7. Experimental Setup (testbed, dataset, methodology)
-8. Results and Analysis (per-attack-class, ablation, stress tests)
-9. Discussion and Limitations
-10. Conclusion and Future Work
+3. Threat Model (cross-protocol attack taxonomy)
+4. Protocol Normalization Framework (core contribution)
+5. System Architecture (shared framework + protocol modules)
+6. Multi-Stage Detection Design
+7. Model Optimization and Compression
+8. Experimental Setup (multi-protocol testbed, datasets, methodology)
+9. Results and Analysis
+   - 9.1 Per-protocol detection performance
+   - 9.2 Cross-protocol generalization results
+   - 9.3 Ablation study (pipeline stages, feature layers, protocol identifier)
+   - 9.4 Latency and resource overhead (per-protocol)
+   - 9.5 Stress test degradation analysis
+10. Discussion and Limitations
+11. Conclusion and Future Work (AMQP, LwM2M, OPC-UA roadmap)
 
 ---
 
 # 10. Expected Contribution
 
-- Standalone MQTT reverse proxy architecture requiring zero broker modification
-- Multi-stage lightweight AI detection pipeline (rule → ML → mitigation)
-- Protocol-aware feature set with 20+ MQTT-specific features
-- Quantitative analysis of latency-security tradeoff with per-attack-class granularity
-- Reproducible MQTT attack testbed and labeled dataset
+- **Protocol-normalized behavioral feature abstraction** that maps heterogeneous IoT protocol semantics (MQTT, CoAP) into a unified feature space — enabling a single ML model across protocols
+- Standalone per-protocol reverse proxy architecture requiring **zero broker modification and zero protocol translation**
+- Multi-stage lightweight AI detection pipeline (rule → ML → mitigation) operating on normalized features
+- **Cross-protocol generalization analysis** — first quantitative study of behavioral feature transfer between MQTT and CoAP
+- Protocol-aware feature set with **33-dimension unified vector** (15 normalized + 2 protocol ID + 16 auxiliary)
+- Quantitative analysis of latency-security tradeoff with per-attack-class and **per-protocol** granularity
+- Reproducible multi-protocol IoT attack testbed and labeled dataset
+- **Extensible architecture** with documented `IProtocolModule` interface for adding protocols
 - Deployable edge-native mitigation framework with open-source release
 
 ---
 
 # 11. Explicit Exclusions (To Prevent Scope Creep)
 
-- No multi-protocol support
+- No protocols beyond MQTT and CoAP (AMQP, LwM2M, OPC-UA are future work)
+- No protocol translation (MQTT stays MQTT, CoAP stays CoAP)
 - No broker modification
 - No deep transformer models
 - No distributed multi-node architecture
+- No cross-protocol message routing or bridging
 
-Focus: Single-node, MQTT-focused, rigorously evaluated system.
+Focus: Dual-protocol (MQTT + CoAP), behavioral normalization, rigorously evaluated system.
+
+## 11.1 Future Work Roadmap
+
+| Protocol           | Transport  | Pattern          | Normalization Complexity   | Priority |
+| ------------------ | ---------- | ---------------- | -------------------------- | -------- |
+| **AMQP**           | TCP        | Pub/Sub + Queue  | Medium (similar to MQTT)   | High     |
+| **HTTP/WebSocket** | TCP        | Request/Response | Low (well-understood)      | Medium   |
+| **LwM2M**          | CoAP-based | Client/Server    | Low (extends CoAP module)  | Medium   |
+| **OPC-UA**         | TCP        | Client/Server    | High (complex type system) | Low      |
+
+Each future protocol requires only: (1) a protocol parser, (2) a feature extractor, (3) a normalization mapping, and (4) registration with the shared framework.
 
 ---
 
@@ -422,15 +749,17 @@ Focus: Single-node, MQTT-focused, rigorously evaluated system.
 
 The Related Work section of the paper should include a comparison table to clearly show the contribution gap:
 
-| System                             | Protocol-Aware | Edge-Deployable | Multi-Stage | No Broker Mod | ML-Based | Open Source |
-| ---------------------------------- | -------------- | --------------- | ----------- | ------------- | -------- | ----------- |
-| IoTSec frameworks                  | ✗              | ✓               | ✗           | ✓             | ✓        | Varies      |
-| Broker plugin approaches           | ✓              | ✓               | ✗           | ✗             | ✗        | Varies      |
-| Network-level IDS (Snort/Suricata) | ✗              | ✗               | ✗           | ✓             | ✗        | ✓           |
-| Cloud-based ML detection           | ✗              | ✗               | ✗           | ✓             | ✓        | ✗           |
-| **This Work**                      | **✓**          | **✓**           | **✓**       | **✓**         | **✓**    | **✓**       |
+| System                             | Multi-Protocol | Protocol-Normalized Features | Edge-Deployable | Multi-Stage | No Broker Mod | No Protocol Translation | ML-Based | Open Source |
+| ---------------------------------- | -------------- | ---------------------------- | --------------- | ----------- | ------------- | ----------------------- | -------- | ----------- |
+| IoTSec frameworks                  | ✗              | ✗                            | ✓               | ✗           | ✓             | N/A                     | ✓        | Varies      |
+| Broker plugin approaches           | ✗              | ✗                            | ✓               | ✗           | ✗             | N/A                     | ✗        | Varies      |
+| Network-level IDS (Snort/Suricata) | Partial        | ✗                            | ✗               | ✗           | ✓             | N/A                     | ✗        | ✓           |
+| Cloud-based ML detection           | Partial        | ✗                            | ✗               | ✗           | ✓             | N/A                     | ✓        | ✗           |
+| Protocol translators/bridges       | ✓              | ✗                            | Varies          | ✗           | Varies        | ✗                       | ✗        | Varies      |
+| **This Work**                      | **✓**          | **✓**                        | **✓**           | **✓**       | **✓**         | **✓**                   | **✓**    | **✓**       |
 
-> Populate with specific systems discovered during literature review (e.g., MQTTGuard, SecMQTT, MQTT-S).
+> Populate with specific systems discovered during literature review (e.g., MQTTGuard, SecMQTT, MQTT-S, CoAPShield).
+> Key differentiator: This is the **first** system to normalize behavioral features across heterogeneous IoT protocols for a unified ML detection model without protocol translation.
 
 ---
 
@@ -438,14 +767,18 @@ The Related Work section of the paper should include a comparison table to clear
 
 To meet publication standards and enable independent verification:
 
-- **Open-source release:** Publish proxy code, dashboard, and attack scripts on GitHub under MIT/Apache-2.0
-- **Dataset release:** Publish the labeled MQTT dataset (or generation scripts if privacy constraints apply)
+- **Open-source release:** Publish proxy framework, both protocol modules, dashboard, and attack scripts on GitHub under MIT/Apache-2.0
+- **Dataset release:** Publish the labeled multi-protocol dataset (MQTT + CoAP normalized features, raw features, and ground-truth labels)
 - **Docker Compose testbed:** One-command reproducible environment:
   ```
-  docker-compose up   # Starts: Mosquitto, AI Proxy, Dashboard, Attack simulator
+  docker-compose up
+  # Starts: Mosquitto, Californium, MQTT Proxy, CoAP Proxy, Dashboard,
+  #         MQTT attack simulator, CoAP attack simulator
   ```
 - **Hardware specification:** Document exact hardware used for benchmarks (CPU model, cores, RAM, OS version)
 - **Experiment scripts:** Automated scripts to reproduce all experiments and generate figures/tables
+- **Normalization validation scripts:** Tools to verify feature alignment across protocols
+- **Protocol module template:** Documented template for adding new protocol modules
 
 ---
 
