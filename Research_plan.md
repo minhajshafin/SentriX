@@ -1,6 +1,12 @@
-# Cross-Protocol Behavioral Anomaly Detection at the Edge
+# SentriX
 
-## A Lightweight AI Reverse Proxy for Heterogeneous IoT Protocols
+## A Middleware-Independent Multi-Stage Security Proxy for Heterogeneous IoT Protocols
+
+Title Options :
+- “A Lightweight Multi-Stage Reverse Proxy Architecture for Heterogeneous IoT Protocol Security”
+- “Protocol-Agnostic Edge Defense for IoT: A Multi-Stage Security Proxy Supporting MQTT and CoAP”
+- "SentriX: A Middleware-Independent Multi-Stage Security Proxy for Heterogeneous IoT Protocols"
+- “SentriX: A Middleware-Agnostic Edge-Native Security Proxy for Heterogeneous IoT Protocols (MQTT and CoAP)”
 
 ---
 
