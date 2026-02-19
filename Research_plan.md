@@ -25,6 +25,14 @@ Design and evaluate a **protocol-aware, multi-stage AI reverse proxy** deployed 
 3. Operates within constrained edge environments
 4. Requires zero modification to the broker
 
+This research proposes and rigorously evaluates a **standalone, protocol-aware, multi-stage AI reverse proxy for MQTT** that enables real-time mitigation of application-layer attacks at the network edge without modifying broker internals.
+
+The central hypothesis is:
+
+> A protocol-aware, multi-stage detection architecture deployed as an external reverse proxy can achieve high application-layer attack detection performance while introducing only marginal latency and resource overhead compared to a native MQTT broker.
+
+The work seeks to formally quantify the **security–performance tradeoff** introduced by edge-native AI-based inspection in IoT environments.
+
 # 2.5 Threat Model
 
 ## Adversary Capabilities
