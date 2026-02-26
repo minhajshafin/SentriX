@@ -2,8 +2,6 @@ services:
   mosquitto:
     image: eclipse-mosquitto:2
     container_name: sentrix-mosquitto
-    ports:
-      - "1883:1883"
     volumes:
       - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
 
@@ -18,16 +16,31 @@ services:
     build:
       context: ../proxy-core
     container_name: sentrix-proxy-core
+    environment:
+      SENTRIX_MQTT_PROXY_PORT: "1884"
+      SENTRIX_MQTT_BROKER_HOST: "mosquitto"
+      SENTRIX_MQTT_BROKER_PORT: "1883"
+      SENTRIX_METRICS_PATH: "/shared/metrics.json"
+    ports:
+      - "1884:1884"
     depends_on:
       - mosquitto
       - californium-backend
+    volumes:
+      - sentrix-metrics:/shared
 
   metrics-api-stub:
     image: python:3.11-slim
     container_name: sentrix-metrics-api
     command: ["python", "/app/metrics_api_stub.py"]
+    environment:
+      SENTRIX_METRICS_PATH: "/shared/metrics.json"
     working_dir: /app
     volumes:
       - ./scripts:/app:ro
+      - sentrix-metrics:/shared:ro
     ports:
       - "8080:8080"
+
+volumes:
+  sentrix-metrics:

@@ -7,6 +7,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_executable(sentrix_proxy
     src/common/main.cpp
+    src/common/metrics_store.cpp
     src/common/proxy_core.cpp
     src/mqtt/mqtt_module.cpp
     src/coap/coap_module.cpp

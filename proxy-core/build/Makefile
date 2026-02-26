@@ -177,6 +177,30 @@ src/common/main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sentrix_proxy.dir/build.make CMakeFiles/sentrix_proxy.dir/src/common/main.cpp.s
 .PHONY : src/common/main.cpp.s
 
+src/common/metrics_store.o: src/common/metrics_store.cpp.o
+.PHONY : src/common/metrics_store.o
+
+# target to build an object file
+src/common/metrics_store.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sentrix_proxy.dir/build.make CMakeFiles/sentrix_proxy.dir/src/common/metrics_store.cpp.o
+.PHONY : src/common/metrics_store.cpp.o
+
+src/common/metrics_store.i: src/common/metrics_store.cpp.i
+.PHONY : src/common/metrics_store.i
+
+# target to preprocess a source file
+src/common/metrics_store.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sentrix_proxy.dir/build.make CMakeFiles/sentrix_proxy.dir/src/common/metrics_store.cpp.i
+.PHONY : src/common/metrics_store.cpp.i
+
+src/common/metrics_store.s: src/common/metrics_store.cpp.s
+.PHONY : src/common/metrics_store.s
+
+# target to generate assembly for a file
+src/common/metrics_store.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sentrix_proxy.dir/build.make CMakeFiles/sentrix_proxy.dir/src/common/metrics_store.cpp.s
+.PHONY : src/common/metrics_store.cpp.s
+
 src/common/proxy_core.o: src/common/proxy_core.cpp.o
 .PHONY : src/common/proxy_core.o
 
@@ -240,6 +264,9 @@ help:
 	@echo "... src/common/main.o"
 	@echo "... src/common/main.i"
 	@echo "... src/common/main.s"
+	@echo "... src/common/metrics_store.o"
+	@echo "... src/common/metrics_store.i"
+	@echo "... src/common/metrics_store.s"
 	@echo "... src/common/proxy_core.o"
 	@echo "... src/common/proxy_core.i"
 	@echo "... src/common/proxy_core.s"
