@@ -28,7 +28,8 @@ docker compose up --build
 ```
 
 Started services:
-- Mosquitto (`1883/tcp`)
+- MQTT ingress via proxy-core (`1884/tcp`)
+- Mosquitto backend (`1883/tcp`, internal)
 - Californium backend (`5683/udp`)
 - C++ proxy-core scaffold
 - Metrics API stub (`http://localhost:8080/health`)
@@ -47,6 +48,35 @@ Dashboard URL:
 
 The dashboard fetches metrics from `NEXT_PUBLIC_METRICS_BASE_URL` (default: `http://localhost:8080`).
 
+## 2.2) Verify MQTT pass-through + live counters
+
+Publish test MQTT messages to the proxy ingress (`1884`):
+
+```bash
+python - <<'PY'
+import paho.mqtt.client as mqtt
+
+def on_connect(client, userdata, flags, rc, properties=None):
+	if rc == 0:
+		for i in range(10):
+			client.publish("sensors/temp", payload=f"sentrix-{i}", qos=0)
+	client.disconnect()
+
+c = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+c.on_connect = on_connect
+c.connect("127.0.0.1", 1884, 30)
+c.loop_forever(timeout=2.0)
+PY
+```
+
+Check counters:
+
+```bash
+curl http://localhost:8080/metrics
+```
+
+`mqtt_msgs` should increase after each publish batch.
+
 ## 3) Generate unified labeled feature data
 
 Run from repository root:
@@ -64,7 +94,7 @@ Output file:
 ## 4) Immediate next coding steps
 
 1. Replace CoAP backend stub with Californium runtime in `deploy/docker-compose.yml`
-2. Add real socket listeners to MQTT/CoAP modules in `proxy-core/src/`
+2. Implement CoAP UDP pass-through in `proxy-core/src/coap/coap_module.cpp`
 3. Implement Stage 1 rules using normalized fields
-4. Add metrics counters and export to `metrics-api`
-5. Start baseline dashboard app in `dashboard/`
+4. Extend metrics counters (per-action/per-attack)
+5. Connect dashboard charts to time-series metrics
