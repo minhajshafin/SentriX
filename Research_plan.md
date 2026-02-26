@@ -175,6 +175,32 @@ Protocol-Specific Features ──▶ Normalization Layer ──▶ Unified Behav
 
 The normalization layer also appends a **one-hot protocol identifier** (`[1,0]` for MQTT, `[0,1]` for CoAP) so the model can optionally learn protocol-specific patterns.
 
+### 3.4 Normalized Feature Specification (Week 1 Freeze v1.0)
+
+To complete Week 1, the normalized feature layer is frozen with explicit computation semantics for reproducible extraction:
+
+| Feature | Symbol | Window | Unit | Range / Normalization | Definition |
+| --- | --- | --- | --- | --- | --- |
+| `msg_rate` | $r_m$ | 1s sliding | msg/s | min-max to [0,1] | Count of valid protocol messages in window / window length |
+| `inter_arrival_time` | $\Delta t$ | 1s sliding | ms | z-score then clip to [-3,3] and rescale to [0,1] | Mean inter-arrival between consecutive messages from same client/source |
+| `payload_size` | $s_p$ | per-message | bytes | log1p then min-max [0,1] | Application payload byte length |
+| `payload_entropy` | $H_p$ | per-message | bits/byte | divide by 8 to [0,1] | Shannon entropy of payload bytes |
+| `resource_path_depth` | $d_r$ | per-message | levels | divide by max depth cap (8) | Topic or URI path segment count |
+| `resource_path_entropy` | $H_r$ | per-message | bits/char | divide by theoretical max | Shannon entropy of topic/URI string |
+| `qos_level` | $q$ | per-message | n/a | MQTT: {0,0.5,1.0}; CoAP: NON=0, CON=1 | Delivery reliability abstraction |
+| `session_duration` | $t_s$ | active session window | s | clip to 300s and divide by 300 | MQTT connection duration or CoAP observation window duration |
+| `unique_resource_count` | $u_r$ | 10s sliding | count | divide by cap (32) | Distinct topic/URI targets by same source |
+| `error_rate` | $e_r$ | 10s sliding | ratio | [0,1] | Protocol errors / total messages in window |
+| `handshake_complexity` | $h_c$ | 10s sliding | ratio | [0,1] | MQTT QoS2 handshake stages or CoAP CON↔ACK exchange ratio |
+| `subscription_breadth` | $b_s$ | 30s sliding | count/score | divide by cap (16) | MQTT wildcard breadth or CoAP Observe registration breadth |
+| `reconnection_rate` | $r_c$ | 30s sliding | events/min | divide by cap (30) | MQTT reconnects or CoAP new-token-session bursts per source |
+| `payload_to_resource_ratio` | $\rho_{pr}$ | per-message | ratio | log1p then min-max [0,1] | Payload bytes divided by resource string length |
+| `protocol_compliance_score` | $c_p$ | 10s sliding | ratio | [0,1] | Well-formed message ratio according to protocol parser |
+
+**Window policy:** per-message features are emitted immediately; windowed features use source-scoped sliding windows with 100 ms update granularity.
+
+**Missing-value policy:** any undefined value (e.g., zero-length payload entropy) is imputed to 0 and accompanied by a binary validity flag in protocol-specific auxiliary features.
+
 > **Extensibility:** Adding a new protocol requires only implementing a new protocol parser and defining the normalization mapping from that protocol's features to the abstract dimensions. The ML model and detection pipeline remain unchanged.
 
 ---
@@ -630,6 +656,20 @@ Measure degradation curves: throughput vs. attack intensity, latency vs. attack 
 - Finalize research objective and threat model (MQTT + CoAP)
 - Review related work on cross-protocol IoT security, build comparison table
 - Define normalized behavioral feature set and protocol-specific mappings
+
+### Week 1 Completion Status (Done)
+
+- ✅ Objective + central hypothesis finalized in Sections 2 and 2.5
+- ✅ Cross-protocol threat taxonomy finalized with protocol-specific exploit lists
+- ✅ Normalized feature layer frozen as v1.0 in Section 3.4 (definitions, units, windows, normalization)
+- ✅ Related work comparison workflow drafted in `Related_Work_Shortlist_Draft.md` with final-8 candidate structure
+
+**Week 1 Deliverables Produced:**
+
+1. Final problem statement and hypothesis (Sections 2, 10)
+2. Final Week 1 threat model baseline (Section 2.5)
+3. Normalized feature specification v1.0 (Section 3.4)
+4. Related-work screening + mapping worksheet (companion draft file)
 
 ## Week 2
 

@@ -1,10 +1,21 @@
-# Related Work Shortlist Draft (for Section 12)
+# Related Work Shortlist Draft (Week 1 Completion Pack for Section 12)
 
 This draft is structured to help you quickly populate the comparison table in `Research_plan.md` Section 12.
 
 ---
 
-## 1) How to Use This Draft
+## 1) Week 1 Output Scope
+
+This file is the **Week 1 completion artifact** for the related-work task in the timeline.
+
+Week 1 outcomes covered here:
+
+- Candidate pool of relevant systems across all baseline categories
+- A reproducible extraction template for converting papers into table entries
+- A narrowed “Final 8” comparison structure aligned with your Section 12 columns
+- A verification checklist that prevents over-claiming novelty
+
+## 2) How to Use This Draft
 
 - Treat this as a **screening list** of high-relevance categories and candidate systems.
 - For each candidate, confirm final details from the original paper/repository before submission.
@@ -20,7 +31,7 @@ This draft is structured to help you quickly populate the comparison table in `R
 
 ---
 
-## 2) Candidate Systems by Category
+## 3) Candidate Systems by Category
 
 ## A. MQTT-focused security systems (closest protocol-level baseline)
 
@@ -111,7 +122,7 @@ This draft is structured to help you quickly populate the comparison table in `R
 
 ---
 
-## 3) Draft Mapping Matrix (Fill after paper-level verification)
+## 4) Draft Mapping Matrix (Fill after paper-level verification)
 
 Use this matrix as a working sheet before finalizing your camera-ready table.
 
@@ -132,7 +143,7 @@ Use this matrix as a working sheet before finalizing your camera-ready table.
 
 ---
 
-## 4) Suggested “Final 8” for the Paper Table
+## 5) Suggested “Final 8” for the Paper Table
 
 To keep Section 12 concise, use one representative from each bucket:
 
@@ -149,7 +160,37 @@ This avoids a bloated table and makes your novelty argument cleaner.
 
 ---
 
-## 5) Fast Literature Query Strings (for verification pass)
+## 6) Evidence Extraction Template (Use per Paper)
+
+Use one row per verified paper/system before assigning ✓/✗ in the main table.
+
+| Field | What to record |
+|---|---|
+| Citation | Full title, venue, year |
+| System type | MQTT-specific, CoAP-specific, broker plugin, network IDS, cloud ML, translator |
+| Deployment | Edge inline / broker-integrated / cloud / passive monitor |
+| Protocol coverage | Exact protocols supported |
+| Translation used? | Yes/No + where in pipeline |
+| Broker modification required? | Yes/No + mechanism (plugin, patch, extension) |
+| Detection method | Rules / ML / hybrid |
+| Pipeline depth | Single-stage or multi-stage |
+| Open-source artifact | Repo link + last active date |
+| Notes | Any ambiguity requiring author text check |
+
+## 7) Decision Rules for Table Columns
+
+Apply these rules consistently so table labels are defensible:
+
+- **Multi-Protocol = ✓** only if one system handles >1 protocol natively in one security design
+- **Protocol-Normalized Features = ✓** only if paper explicitly defines cross-protocol semantic abstraction, not just shared flow features
+- **Edge-Deployable = ✓** only if feasible inline edge deployment is described or demonstrated
+- **Multi-Stage = ✓** only if distinct sequential stages exist (e.g., rule + ML + mitigation)
+- **No Broker Mod = ✓** only if no plugin/patch/broker instrumentation is required
+- **No Protocol Translation = ✓** only if messages are not converted between protocols
+- **ML-Based = ✓** only if ML affects detection decision path
+- **Open Source = ✓** only if public repository exists
+
+## 8) Fast Literature Query Strings (for verification pass)
 
 Use these search strings to lock final references quickly:
 
@@ -165,13 +206,13 @@ Use these search strings to lock final references quickly:
 
 ---
 
-## 6) Draft Positioning Paragraph (Drop-in for Related Work)
+## 9) Draft Positioning Paragraph (Drop-in for Related Work)
 
 Existing IoT security systems are predominantly either protocol-specific (e.g., MQTT-only or CoAP-only), broker-integrated (plugin-based), or network-level IDS frameworks that operate on packet/flow semantics rather than protocol-normalized behavioral abstractions. Multi-protocol systems typically rely on protocol translation or gateway bridging rather than preserving protocol-native traffic while learning in a unified feature space. In contrast, this work introduces per-protocol reverse proxies with no broker modification and no protocol translation, coupled through a normalized behavioral feature layer that enables a single joint ML model across MQTT and CoAP.
 
 ---
 
-## 7) Finalization Checklist
+## 10) Finalization Checklist
 
 - Replace each “candidate” with a verified citation (paper title, venue, year)
 - Confirm open-source status and repository link

@@ -1,0 +1,133 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\begin{document}
+
+\title{SentriX: A Middleware-Independent Multi-Stage Security Proxy for Heterogeneous IoT Protocols}
+\author{\IEEEauthorblockN{Author Name(s) Placeholder}
+\IEEEauthorblockA{\textit{Affiliation Placeholder} \\
+City, Country \\
+email@domain.com}}
+
+\maketitle
+
+\begin{abstract}
+IoT deployments increasingly combine heterogeneous application protocols such as MQTT and CoAP, yet most security systems remain protocol-specific, broker-coupled, or cloud-centric. This paper presents SentriX, a middleware-independent, edge-native, multi-stage reverse proxy architecture that secures MQTT and CoAP without protocol translation and without broker modification. The key contribution is a protocol-normalized behavioral abstraction that maps protocol-specific semantics into a shared feature space, enabling one unified machine learning detector across transport-diverse protocols. SentriX uses a three-stage pipeline: constant-time rule filtering, lightweight machine learning inference, and protocol-aware adaptive mitigation. We define a fixed 33-dimensional feature vector with 15 normalized behavioral dimensions, protocol identity encoding, and protocol-specific auxiliary features. The paper also formalizes a cross-protocol threat model and an evaluation protocol that measures both security efficacy and edge overhead, including per-protocol latency, throughput, and cross-protocol generalization.
+\end{abstract}
+
+\begin{IEEEkeywords}
+IoT security, MQTT, CoAP, reverse proxy, anomaly detection, edge AI, protocol normalization
+\end{IEEEkeywords}
+
+\section{Introduction}
+Modern IoT systems increasingly combine transport-diverse and semantics-diverse application protocols, especially MQTT and CoAP. Existing protection approaches are often constrained by one of three limitations: protocol specificity, broker coupling, or cloud-centralized detection paths that increase response latency. These limitations reduce applicability in edge deployments where in-line decisions, protocol correctness, and low overhead are mandatory.
+
+This work addresses that gap through SentriX, a dual-protocol reverse proxy architecture that preserves protocol-native forwarding while unifying security reasoning across protocols. MQTT traffic remains MQTT over TCP, and CoAP traffic remains CoAP over UDP; no translation layer is introduced. Instead, SentriX maps protocol-specific observations to a normalized behavioral feature space that supports one shared machine learning model.
+
+The main contributions are as follows:
+\begin{itemize}
+\item A middleware-independent edge architecture with per-protocol proxy instances and a shared detection core.
+\item A protocol-normalized feature abstraction with fixed semantics to support cross-protocol learning.
+\item A multi-stage detection pipeline combining low-cost rules, lightweight ML inference, and protocol-aware mitigation.
+\item A cross-protocol threat model and evaluation protocol emphasizing security-performance tradeoffs under edge constraints.
+\end{itemize}
+
+\section{Related Work and Motivation}
+Prior IoT security systems can be grouped into: (i) protocol-specific detectors, (ii) broker-integrated plugins, (iii) network-level IDS, (iv) cloud-side anomaly detectors, and (v) protocol translators or gateways. Protocol-specific systems typically capture rich semantics but do not generalize across heterogeneous protocols. Broker plugins can be operationally practical but usually require broker-specific integration and portability tradeoffs. Network IDS solutions are broadly deployable but often rely on packet or flow features that underrepresent application semantics. Cloud-side methods can provide advanced analytics but introduce dependency on upstream connectivity and increased control-loop latency. Translators support multi-protocol interoperability but violate strict protocol-preservation constraints in security-critical paths.
+
+The core gap is therefore not simply ``multi-protocol support,'' but secure, in-line, protocol-preserving detection with shared behavioral learning across heterogeneous protocol semantics. SentriX targets this gap by combining per-protocol parsing with a unified behavioral representation, enabling one ML detector to operate across MQTT and CoAP while retaining protocol-native forwarding.
+
+\section{Threat Model}
+\subsection{Adversary Capabilities}
+The adversary can send arbitrary packets to the externally exposed ports of either proxy instance. The adversary can craft both valid and malformed protocol-native messages, including control-plane misuse and semantic abuse. No physical access to proxy hosts or backend brokers is assumed.
+
+\subsection{Attack Taxonomy}
+SentriX considers both cross-protocol and protocol-specific classes:
+\begin{itemize}
+\item \textbf{Volumetric abuse}: MQTT publish/connect floods; CoAP request floods.
+\item \textbf{Protocol abuse}: malformed control fields, oversized payloads, invalid options, token misuse.
+\item \textbf{Semantic abuse}: topic/resource squatting and payload injection.
+\item \textbf{Slow-rate abuse}: MQTT SlowITe-like behavior; delayed CoAP observe or acknowledgment patterns.
+\item \textbf{Amplification abuse}: MQTT QoS handshake exploitation; CoAP observe-based amplification.
+\end{itemize}
+
+\subsection{Trust Boundaries}
+IoT clients are untrusted. Proxy-to-broker links are trusted (localhost or secured internal channel). MQTT and CoAP proxy paths are operationally independent except for shared detection model and metrics. The monitoring dashboard is read-only and authenticated.
+
+\section{Protocol-Normalized Feature Framework}
+\subsection{Design Principle}
+SentriX separates protocol-native parsing from protocol-agnostic behavioral modeling. Let $\mathbf{x}^{(p)}$ denote a raw feature vector extracted from protocol $p \in \{\text{MQTT},\text{CoAP}\}$. A normalization function maps protocol-specific vectors into a shared representation:
+\begin{equation}
+\mathbf{z} = \Phi_p\left(\mathbf{x}^{(p)}\right), \quad \mathbf{z} \in \mathbb{R}^{15}.
+\end{equation}
+
+This shared vector is concatenated with protocol identity and protocol-specific auxiliary features to form the model input:
+\begin{equation}
+\mathbf{f} = [\mathbf{z} \;\|\; \mathbf{i}_p \;\|\; \mathbf{a}_{\text{MQTT}} \;\|\; \mathbf{a}_{\text{CoAP}}], \quad \mathbf{f} \in \mathbb{R}^{33}.
+\end{equation}
+
+\subsection{Frozen Normalized Dimensions}
+The 15 normalized dimensions include message rate, inter-arrival time, payload size and entropy, resource path depth and entropy, reliability level abstraction, session duration, unique resource count, error rate, handshake complexity, subscription breadth, reconnection rate, payload-to-resource ratio, and protocol compliance score.
+
+Each dimension has an explicit window policy and normalization rule (e.g., min-max scaling, clipped z-score, bounded ratio), frozen as Week 1 specification v1.0. This freeze ensures reproducible extraction for subsequent dataset generation and ablation studies.
+
+\subsection{Extensibility}
+The normalization interface is protocol-agnostic: adding a new protocol requires only a parser, raw feature extractor, and mapping $\Phi_p$ to the existing abstract dimensions (plus optional protocol-specific auxiliary features). The shared model pipeline remains unchanged.
+
+\section{System Architecture}
+\subsection{High-Level Design}
+SentriX deploys two dedicated reverse proxies at the edge:
+\begin{itemize}
+\item MQTT proxy: TCP in-line path between MQTT clients and Mosquitto.
+\item CoAP proxy: UDP in-line path between CoAP clients and Californium.
+\end{itemize}
+Both proxies feed a shared normalization and inference subsystem and export unified metrics to a monitoring dashboard.
+
+\subsection{Shared Core Components}
+The shared core includes:
+\begin{itemize}
+\item normalization engine,
+\item cross-protocol rule evaluator,
+\item ML inference runtime,
+\item mitigation decision engine,
+\item metrics collector and export interface.
+\end{itemize}
+
+\subsection{Protocol Modules}
+Each protocol module implements: packet parsing, raw feature extraction, normalization mapping, protocol-specific rule checks, and protocol-specific mitigation dispatch. This modularity keeps protocol logic isolated while preserving a common detection path.
+
+\section{Multi-Stage Detection Pipeline}
+\subsection{Stage 1: Fast Rule Filtering}
+Stage 1 performs low-overhead checks on normalized behavior (e.g., extreme message rate, anomalous payload entropy, reconnection bursts) plus protocol-specific checks (e.g., MQTT wildcard misuse, CoAP observe abuse indicators). This stage removes clearly malicious events early and limits inference load.
+
+\subsection{Stage 2: Lightweight ML Inference}
+Stage 2 uses a compact model family (e.g., tree ensembles or small MLP) over the 33-dimensional input vector. Model selection is based on per-protocol detection quality, macro F1, inference latency, and memory footprint. The joint model objective explicitly measures whether normalized behavioral dimensions support robust learning across both MQTT and CoAP.
+
+\subsection{Stage 3: Adaptive Protocol-Aware Mitigation}
+Mitigation decisions are produced from Stage 1 and Stage 2 outputs. Cross-protocol actions include forward, drop, and rate-limit. Protocol-specific actions include MQTT disconnect/subscription rejection and CoAP reset/observe rejection/response throttling. All decisions are logged with protocol and attack context for later analysis.
+
+\section{Status and Next Sections}
+Sections I--VI in this draft correspond to Week 1-complete artifacts (problem framing, threat model, normalization design, and architecture). The following sections are intentionally staged for Week 2 onward:
+\begin{itemize}
+\item \textbf{Experimental Setup}: concrete testbed implementation details and data collection pipeline.
+\item \textbf{Evaluation Methodology}: finalized baselines, metrics, and statistical testing procedure.
+\item \textbf{Results and Analysis}: quantitative outcomes after dataset generation and proxy experiments.
+\end{itemize}
+
+\begin{thebibliography}{00}
+\bibitem{rw_placeholder_1} Placeholder: protocol-specific MQTT security baseline (to be replaced with verified citation).
+\bibitem{rw_placeholder_2} Placeholder: protocol-specific CoAP security baseline (to be replaced with verified citation).
+\bibitem{rw_placeholder_3} Placeholder: broker plugin security baseline (to be replaced with verified citation).
+\bibitem{rw_placeholder_4} Placeholder: network IDS baseline (Snort/Suricata/Zeek reference).
+\bibitem{rw_placeholder_5} Placeholder: cloud IoT ML anomaly detection baseline.
+\end{thebibliography}
+
+\end{document}
