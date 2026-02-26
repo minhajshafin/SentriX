@@ -32,8 +32,13 @@ proxy-core/build/
 # Java / Maven build outputs
 deploy/californium/target/
 
-# Generated data artifacts
-data/processed/
+# Data folders: keep structure, ignore contents
+data/features/*
+!data/features/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+data/raw/*
+!data/raw/.gitkeep
 
 # Research paper: keep only main tex source tracked
 Research_Paper/*
