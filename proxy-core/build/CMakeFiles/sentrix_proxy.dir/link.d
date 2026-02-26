@@ -3,6 +3,7 @@ sentrix_proxy: \
   /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/crti.o \
   /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o \
   CMakeFiles/sentrix_proxy.dir/src/common/main.cpp.o \
+  CMakeFiles/sentrix_proxy.dir/src/common/metrics_store.cpp.o \
   CMakeFiles/sentrix_proxy.dir/src/common/proxy_core.cpp.o \
   CMakeFiles/sentrix_proxy.dir/src/mqtt/mqtt_module.cpp.o \
   CMakeFiles/sentrix_proxy.dir/src/coap/coap_module.cpp.o \
@@ -41,6 +42,8 @@ sentrix_proxy: \
 /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o:
 
 CMakeFiles/sentrix_proxy.dir/src/common/main.cpp.o:
+
+CMakeFiles/sentrix_proxy.dir/src/common/metrics_store.cpp.o:
 
 CMakeFiles/sentrix_proxy.dir/src/common/proxy_core.cpp.o:
 

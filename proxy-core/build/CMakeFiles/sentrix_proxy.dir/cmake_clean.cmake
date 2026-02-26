@@ -4,6 +4,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/sentrix_proxy.dir/src/coap/coap_module.cpp.o.d"
   "CMakeFiles/sentrix_proxy.dir/src/common/main.cpp.o"
   "CMakeFiles/sentrix_proxy.dir/src/common/main.cpp.o.d"
+  "CMakeFiles/sentrix_proxy.dir/src/common/metrics_store.cpp.o"
+  "CMakeFiles/sentrix_proxy.dir/src/common/metrics_store.cpp.o.d"
   "CMakeFiles/sentrix_proxy.dir/src/common/proxy_core.cpp.o"
   "CMakeFiles/sentrix_proxy.dir/src/common/proxy_core.cpp.o.d"
   "CMakeFiles/sentrix_proxy.dir/src/mqtt/mqtt_module.cpp.o"
