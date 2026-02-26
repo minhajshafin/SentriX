@@ -1,7 +1,9 @@
 #include <algorithm>
+#include <cstdlib>
 #include <iostream>
 
 #include "sentrix/coap_module.hpp"
+#include "sentrix/event_log.hpp"
 
 namespace sentrix {
 
@@ -11,10 +13,14 @@ const char* CoapModule::name() const {
 
 void CoapModule::start() {
     std::cout << "[CoAP] module start (stub)" << std::endl;
+    const char* path = std::getenv("SENTRIX_EVENTS_PATH");
+    eventlog::appendEvent(path != nullptr ? path : "/tmp/sentrix_events.log", "coap", "internal", "module_start", 0, "stub module online");
 }
 
 void CoapModule::stop() {
     std::cout << "[CoAP] module stop (stub)" << std::endl;
+    const char* path = std::getenv("SENTRIX_EVENTS_PATH");
+    eventlog::appendEvent(path != nullptr ? path : "/tmp/sentrix_events.log", "coap", "internal", "module_stop", 0, "stub module stopped");
 }
 
 ProtocolEvent CoapModule::parse(const std::uint8_t* data, std::size_t len) {

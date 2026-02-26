@@ -42,6 +42,7 @@ private:
     int listen_port_ = 1884;
     std::string broker_host_ = "mosquitto";
     int broker_port_ = 1883;
+    std::string events_path_;
 };
 
 }  // namespace sentrix

@@ -12,6 +12,7 @@
 #include <unistd.h>
 
 #include "sentrix/mqtt_module.hpp"
+#include "sentrix/event_log.hpp"
 #include "sentrix/metrics_store.hpp"
 
 namespace sentrix {
@@ -42,6 +43,12 @@ MqttModule::MqttModule() {
 
     if (const char* host = std::getenv("SENTRIX_MQTT_BROKER_HOST"); host != nullptr && *host != '\0') {
         broker_host_ = host;
+    }
+
+    if (const char* event_path = std::getenv("SENTRIX_EVENTS_PATH"); event_path != nullptr && *event_path != '\0') {
+        events_path_ = event_path;
+    } else {
+        events_path_ = "/tmp/sentrix_events.log";
     }
 }
 
@@ -94,6 +101,7 @@ void MqttModule::start() {
 
     std::cout << "[MQTT] proxy listening on 0.0.0.0:" << listen_port_
               << " -> " << broker_host_ << ':' << broker_port_ << std::endl;
+    eventlog::appendEvent(events_path_, "mqtt", "internal", "module_start", 0, "proxy online");
 
     accept_thread_ = std::thread(&MqttModule::acceptLoop, this);
 }
@@ -120,6 +128,7 @@ void MqttModule::stop() {
     }
 
     std::cout << "[MQTT] module stopped" << std::endl;
+    eventlog::appendEvent(events_path_, "mqtt", "internal", "module_stop", 0, "proxy stopped");
 }
 
 ProtocolEvent MqttModule::parse(const std::uint8_t* data, std::size_t len) {
@@ -178,6 +187,8 @@ void MqttModule::acceptLoop() {
             tracked_sockets_.push_back(client_fd);
         }
 
+        eventlog::appendEvent(events_path_, "mqtt", "incoming", "connection_open", 0, "client accepted");
+
         std::lock_guard<std::mutex> lock(clients_mutex_);
         client_threads_.emplace_back(&MqttModule::handleClient, this, client_fd);
     }
@@ -223,6 +234,13 @@ void MqttModule::handleClient(int client_fd) {
             if (frame_count > 0) {
                 metrics::addMqttMessages(frame_count);
             }
+            eventlog::appendEvent(
+                events_path_,
+                "mqtt",
+                "incoming",
+                "traffic",
+                static_cast<std::size_t>(received),
+                "client_to_broker");
 
             ssize_t sent_total = 0;
             while (sent_total < received) {
@@ -249,6 +267,14 @@ void MqttModule::handleClient(int client_fd) {
                 break;
             }
 
+            eventlog::appendEvent(
+                events_path_,
+                "mqtt",
+                "outgoing",
+                "traffic",
+                static_cast<std::size_t>(received),
+                "broker_to_client");
+
             ssize_t sent_total = 0;
             while (sent_total < received) {
                 const ssize_t sent = ::send(
@@ -271,6 +297,7 @@ void MqttModule::handleClient(int client_fd) {
 
     ::close(client_fd);
     ::close(broker_fd);
+    eventlog::appendEvent(events_path_, "mqtt", "internal", "connection_close", 0, "client disconnected");
 }
 
 int MqttModule::connectToBroker() const {
