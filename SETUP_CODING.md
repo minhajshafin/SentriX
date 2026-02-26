@@ -30,7 +30,8 @@ docker compose up --build
 Started services:
 - MQTT ingress via proxy-core (`1884/tcp`)
 - Mosquitto backend (`1883/tcp`, internal)
-- Californium backend (`5683/udp`)
+- CoAP ingress via proxy-core (`5684/udp`)
+- Californium backend (`5683/udp`, internal)
 - C++ proxy-core scaffold
 - Metrics API stub (`http://localhost:8080/health`)
 - Event feed API (`http://localhost:8080/events`)
@@ -88,6 +89,28 @@ curl http://localhost:8080/metrics
 curl http://localhost:8080/events | python -m json.tool | head -n 60
 ```
 
+## 2.4) Verify CoAP pass-through + live counters
+
+Generate benign CoAP traffic through proxy ingress (`5684`):
+
+```bash
+python -m simulators.coap.coap_live_benign --host 127.0.0.1 --port 5684 --count 20
+```
+
+Generate attack-like CoAP traffic:
+
+```bash
+python -m simulators.coap.coap_live_attacks --host 127.0.0.1 --port 5684 --attack request_flood --count 80
+```
+
+Check counters:
+
+```bash
+curl http://localhost:8080/metrics
+```
+
+`coap_msgs` should increase after CoAP traffic runs.
+
 ## 3) Generate unified labeled feature data
 
 Run from repository root:
@@ -102,10 +125,19 @@ python -m simulators.coap.coap_attacks --count 100
 Output file:
 - `data/features/unified_features.csv`
 
+## 3.1) Export live protocol-tagged proxy events to dataset CSV
+
+```bash
+python ml-pipeline/src/export_events_to_dataset.py --events-api http://localhost:8080/events --out data/raw/proxy_events.csv
+```
+
+Output file:
+- `data/raw/proxy_events.csv`
+
 ## 4) Immediate next coding steps
 
-1. Replace CoAP backend stub with Californium runtime in `deploy/docker-compose.yml`
-2. Implement CoAP UDP pass-through in `proxy-core/src/coap/coap_module.cpp`
+1. Implement protocol-specific parsing and feature extraction for live CoAP events
+2. Implement Stage 1 CoAP-specific rule checks in proxy path
 3. Implement Stage 1 rules using normalized fields
 4. Extend metrics counters (per-action/per-attack)
 5. Connect dashboard charts to time-series metrics

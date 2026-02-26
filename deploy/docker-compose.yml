@@ -9,8 +9,6 @@ services:
     build:
       context: ./californium
     container_name: sentrix-coap-backend
-    ports:
-      - "5683:5683/udp"
 
   proxy-core:
     build:
@@ -20,10 +18,14 @@ services:
       SENTRIX_MQTT_PROXY_PORT: "1884"
       SENTRIX_MQTT_BROKER_HOST: "mosquitto"
       SENTRIX_MQTT_BROKER_PORT: "1883"
+      SENTRIX_COAP_PROXY_PORT: "5684"
+      SENTRIX_COAP_BACKEND_HOST: "californium-backend"
+      SENTRIX_COAP_BACKEND_PORT: "5683"
       SENTRIX_METRICS_PATH: "/shared/metrics.json"
       SENTRIX_EVENTS_PATH: "/shared/events.log"
     ports:
       - "1884:1884"
+      - "5684:5684/udp"
     depends_on:
       - mosquitto
       - californium-backend
