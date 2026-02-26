@@ -1,2 +1,40 @@
+# OS / Editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# Node / Next.js (dashboard)
+dashboard/node_modules/
+dashboard/.next/
+dashboard/out/
+dashboard/.turbo/
+dashboard/.vercel/
+dashboard/npm-debug.log*
+dashboard/yarn-debug.log*
+dashboard/yarn-error.log*
+dashboard/pnpm-debug.log*
+
+# CMake / C++ build outputs
+proxy-core/build/
+
+# Java / Maven build outputs
+deploy/californium/target/
+
+# Generated data artifacts
+data/processed/
+
+# Research paper: keep only main tex source tracked
 Research_Paper/*
 !Research_Paper/conference_101719.tex
