@@ -29,9 +29,23 @@ docker compose up --build
 
 Started services:
 - Mosquitto (`1883/tcp`)
-- CoAP backend stub (`5683/udp`)
+- Californium backend (`5683/udp`)
 - C++ proxy-core scaffold
 - Metrics API stub (`http://localhost:8080/health`)
+
+## 2.1) Run the dashboard
+
+```bash
+cd dashboard
+cp .env.example .env.local
+npm install
+npm run dev
+```
+
+Dashboard URL:
+- `http://localhost:3000`
+
+The dashboard fetches metrics from `NEXT_PUBLIC_METRICS_BASE_URL` (default: `http://localhost:8080`).
 
 ## 3) Generate unified labeled feature data
 

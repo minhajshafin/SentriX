@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   mosquitto:
     image: eclipse-mosquitto:2
@@ -9,13 +7,10 @@ services:
     volumes:
       - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
 
-  coap-backend-stub:
-    image: python:3.11-slim
+  californium-backend:
+    build:
+      context: ./californium
     container_name: sentrix-coap-backend
-    command: ["python", "/app/coap_backend_stub.py"]
-    working_dir: /app
-    volumes:
-      - ./scripts:/app:ro
     ports:
       - "5683:5683/udp"
 
@@ -25,7 +20,7 @@ services:
     container_name: sentrix-proxy-core
     depends_on:
       - mosquitto
-      - coap-backend-stub
+      - californium-backend
 
   metrics-api-stub:
     image: python:3.11-slim

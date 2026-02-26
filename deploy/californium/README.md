@@ -1,6 +1,10 @@
-# Californium Placeholder
+# Californium Backend Service
 
-This folder is reserved for Californium server artifacts.
+This folder contains a minimal Java CoAP backend based on Eclipse Californium.
 
-For the initial scaffold, `docker-compose.yml` uses `coap-backend-stub`.
-Replace that service with a Californium container/JAR invocation in Week 2 integration.
+Exposed resources:
+- `coap://<host>:5683/health`
+- `coap://<host>:5683/sensors/temp`
+- `coap://<host>:5683/actuators/valve`
+
+Build/run is wired through `deploy/docker-compose.yml` as service `californium-backend`.

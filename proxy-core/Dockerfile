@@ -8,6 +8,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 COPY . /app
 
-RUN cmake -S . -B build && cmake --build build -j
+RUN rm -rf /app/build && cmake -S . -B build && cmake --build build -j
 
 CMD ["/app/build/sentrix_proxy"]
