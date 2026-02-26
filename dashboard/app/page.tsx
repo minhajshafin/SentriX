@@ -34,7 +34,7 @@ export default async function HomePage() {
       {!metrics ? (
         <div className="card error">
           <h2>Metrics API unavailable</h2>
-          <p>Check `http://localhost:8080/health` and ensure `docker compose up` is running.</p>
+          <p>Check http://localhost:8080/health and ensure docker compose up is running.</p>
         </div>
       ) : (
         <div className="grid">
@@ -56,6 +56,12 @@ export default async function HomePage() {
           </article>
         </div>
       )}
+
+      <div className="card" style={{ marginTop: '1rem' }}>
+        <h2>Endpoints</h2>
+        <p>MQTT proxy ingress: localhost:1884</p>
+        <p>Metrics API: http://localhost:8080/metrics</p>
+      </div>
     </main>
   );
 }
