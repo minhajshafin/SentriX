@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_executable(sentrix_proxy
+    src/common/event_log.cpp
     src/common/main.cpp
     src/common/metrics_store.cpp
     src/common/proxy_core.cpp

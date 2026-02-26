@@ -33,6 +33,7 @@ Started services:
 - Californium backend (`5683/udp`)
 - C++ proxy-core scaffold
 - Metrics API stub (`http://localhost:8080/health`)
+- Event feed API (`http://localhost:8080/events`)
 
 ## 2.1) Run the dashboard
 
@@ -76,6 +77,16 @@ curl http://localhost:8080/metrics
 ```
 
 `mqtt_msgs` should increase after each publish batch.
+
+## 2.3) View timestamped security event tracker
+
+- Open dashboard at `http://localhost:3000`
+- The **Security Event Tracker** panel shows recent events with timestamp, protocol, direction, event type, and byte count.
+- Raw event feed is available at:
+
+```bash
+curl http://localhost:8080/events | python -m json.tool | head -n 60
+```
 
 ## 3) Generate unified labeled feature data
 

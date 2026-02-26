@@ -191,4 +191,5 @@ CMakeFiles/sentrix_proxy.dir/src/mqtt/mqtt_module.cpp.o: \
  /usr/include/c++/15.2.1/bits/vector.tcc \
  /home/billy/X/SentriX/proxy-core/include/sentrix/protocol_module.hpp \
  /home/billy/X/SentriX/proxy-core/include/sentrix/feature_vector.hpp \
+ /home/billy/X/SentriX/proxy-core/include/sentrix/event_log.hpp \
  /home/billy/X/SentriX/proxy-core/include/sentrix/metrics_store.hpp

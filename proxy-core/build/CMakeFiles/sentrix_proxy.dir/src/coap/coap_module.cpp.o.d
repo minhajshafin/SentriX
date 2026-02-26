@@ -164,4 +164,5 @@ CMakeFiles/sentrix_proxy.dir/src/coap/coap_module.cpp.o: \
  /usr/include/c++/15.2.1/bits/stl_bvector.h \
  /usr/include/c++/15.2.1/bits/vector.tcc \
  /home/billy/X/SentriX/proxy-core/include/sentrix/feature_vector.hpp \
- /usr/include/c++/15.2.1/array /usr/include/c++/15.2.1/compare
+ /usr/include/c++/15.2.1/array /usr/include/c++/15.2.1/compare \
+ /home/billy/X/SentriX/proxy-core/include/sentrix/event_log.hpp

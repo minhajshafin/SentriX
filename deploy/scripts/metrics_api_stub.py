@@ -25,6 +25,28 @@ def read_metrics_snapshot(path: str) -> dict:
 
 
 METRICS_PATH = os.getenv("SENTRIX_METRICS_PATH", "/tmp/sentrix_metrics.json")
+EVENTS_PATH = os.getenv("SENTRIX_EVENTS_PATH", "/tmp/sentrix_events.log")
+
+
+def read_event_tail(path: str, limit: int = 100) -> list[dict]:
+    if not os.path.exists(path):
+        return []
+
+    events: list[dict] = []
+    try:
+        with open(path, "r", encoding="utf-8") as fp:
+            for raw_line in fp:
+                line = raw_line.strip()
+                if not line:
+                    continue
+                try:
+                    events.append(json.loads(line))
+                except json.JSONDecodeError:
+                    continue
+    except OSError:
+        return []
+
+    return events[-limit:]
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -43,12 +65,17 @@ class Handler(BaseHTTPRequestHandler):
                     "status": "ok",
                     "service": "metrics-api-stub",
                     "metrics_path": METRICS_PATH,
+                    "events_path": EVENTS_PATH,
                 }
             )
             return
 
         if self.path == "/metrics":
             self._send_json(read_metrics_snapshot(METRICS_PATH))
+            return
+
+        if self.path == "/events":
+            self._send_json({"events": read_event_tail(EVENTS_PATH, limit=120)})
             return
 
         self._send_json({"error": "not_found"}, status=404)

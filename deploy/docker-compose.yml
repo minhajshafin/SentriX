@@ -21,6 +21,7 @@ services:
       SENTRIX_MQTT_BROKER_HOST: "mosquitto"
       SENTRIX_MQTT_BROKER_PORT: "1883"
       SENTRIX_METRICS_PATH: "/shared/metrics.json"
+      SENTRIX_EVENTS_PATH: "/shared/events.log"
     ports:
       - "1884:1884"
     depends_on:
@@ -35,6 +36,7 @@ services:
     command: ["python", "/app/metrics_api_stub.py"]
     environment:
       SENTRIX_METRICS_PATH: "/shared/metrics.json"
+      SENTRIX_EVENTS_PATH: "/shared/events.log"
     working_dir: /app
     volumes:
       - ./scripts:/app:ro

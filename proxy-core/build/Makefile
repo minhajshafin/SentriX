@@ -153,6 +153,30 @@ src/coap/coap_module.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sentrix_proxy.dir/build.make CMakeFiles/sentrix_proxy.dir/src/coap/coap_module.cpp.s
 .PHONY : src/coap/coap_module.cpp.s
 
+src/common/event_log.o: src/common/event_log.cpp.o
+.PHONY : src/common/event_log.o
+
+# target to build an object file
+src/common/event_log.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sentrix_proxy.dir/build.make CMakeFiles/sentrix_proxy.dir/src/common/event_log.cpp.o
+.PHONY : src/common/event_log.cpp.o
+
+src/common/event_log.i: src/common/event_log.cpp.i
+.PHONY : src/common/event_log.i
+
+# target to preprocess a source file
+src/common/event_log.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sentrix_proxy.dir/build.make CMakeFiles/sentrix_proxy.dir/src/common/event_log.cpp.i
+.PHONY : src/common/event_log.cpp.i
+
+src/common/event_log.s: src/common/event_log.cpp.s
+.PHONY : src/common/event_log.s
+
+# target to generate assembly for a file
+src/common/event_log.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sentrix_proxy.dir/build.make CMakeFiles/sentrix_proxy.dir/src/common/event_log.cpp.s
+.PHONY : src/common/event_log.cpp.s
+
 src/common/main.o: src/common/main.cpp.o
 .PHONY : src/common/main.o
 
@@ -261,6 +285,9 @@ help:
 	@echo "... src/coap/coap_module.o"
 	@echo "... src/coap/coap_module.i"
 	@echo "... src/coap/coap_module.s"
+	@echo "... src/common/event_log.o"
+	@echo "... src/common/event_log.i"
+	@echo "... src/common/event_log.s"
 	@echo "... src/common/main.o"
 	@echo "... src/common/main.i"
 	@echo "... src/common/main.s"
