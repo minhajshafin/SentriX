@@ -1,0 +1,38 @@
+version: "3.9"
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: sentrix-mosquitto
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+
+  coap-backend-stub:
+    image: python:3.11-slim
+    container_name: sentrix-coap-backend
+    command: ["python", "/app/coap_backend_stub.py"]
+    working_dir: /app
+    volumes:
+      - ./scripts:/app:ro
+    ports:
+      - "5683:5683/udp"
+
+  proxy-core:
+    build:
+      context: ../proxy-core
+    container_name: sentrix-proxy-core
+    depends_on:
+      - mosquitto
+      - coap-backend-stub
+
+  metrics-api-stub:
+    image: python:3.11-slim
+    container_name: sentrix-metrics-api
+    command: ["python", "/app/metrics_api_stub.py"]
+    working_dir: /app
+    volumes:
+      - ./scripts:/app:ro
+    ports:
+      - "8080:8080"

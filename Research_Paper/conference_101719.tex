@@ -114,13 +114,56 @@ Stage 2 uses a compact model family (e.g., tree ensembles or small MLP) over the
 \subsection{Stage 3: Adaptive Protocol-Aware Mitigation}
 Mitigation decisions are produced from Stage 1 and Stage 2 outputs. Cross-protocol actions include forward, drop, and rate-limit. Protocol-specific actions include MQTT disconnect/subscription rejection and CoAP reset/observe rejection/response throttling. All decisions are logged with protocol and attack context for later analysis.
 
-\section{Status and Next Sections}
-Sections I--VI in this draft correspond to Week 1-complete artifacts (problem framing, threat model, normalization design, and architecture). The following sections are intentionally staged for Week 2 onward:
+\section{Experimental Setup}
+\subsection{Testbed Topology}
+The evaluation uses a dual-path edge testbed with two independent protocol-native data planes:
 \begin{itemize}
-\item \textbf{Experimental Setup}: concrete testbed implementation details and data collection pipeline.
-\item \textbf{Evaluation Methodology}: finalized baselines, metrics, and statistical testing procedure.
-\item \textbf{Results and Analysis}: quantitative outcomes after dataset generation and proxy experiments.
+\item MQTT path: Paho clients $\rightarrow$ SentriX MQTT proxy $\rightarrow$ Mosquitto broker.
+\item CoAP path: libcoap/aiocoap clients $\rightarrow$ SentriX CoAP proxy $\rightarrow$ Californium server.
 \end{itemize}
+Both proxy instances run on the same edge node and share the normalization, inference, and metrics subsystems, while preserving protocol-native forwarding and protocol-specific mitigation control.
+
+\subsection{Traffic Generation}
+For each protocol, benign and attack traffic are generated using scripted workloads.
+
+\textbf{Benign MQTT workload:} periodic and bursty publish streams from simulated sensors (e.g., temperature, humidity, motion), varied topic depth, mixed QoS levels, and heterogeneous payload sizes.
+
+\textbf{Benign CoAP workload:} GET/PUT/POST traffic over realistic resource trees, mixed CON/NON messaging, periodic Observe registrations, and block-wise transfers for larger payload scenarios.
+
+\textbf{Attack MQTT workload:} publish flood, connection exhaustion, malformed control/payload injection, wildcard subscription abuse, SlowITe-like slow connect behavior, and QoS-2 handshake abuse.
+
+\textbf{Attack CoAP workload:} high-rate request flood, Observe amplification, token exhaustion, malformed option injection, resource discovery abuse, confirmable flooding behavior, and block-wise transfer abuse.
+
+\subsection{Data Collection and Labeling}
+Each scenario is executed in labeled windows with synchronized workload metadata and proxy telemetry. Labels include protocol identifier, attack class, and attack-family tag. The pipeline records:
+\begin{itemize}
+\item raw protocol events and parser outcomes,
+\item extracted protocol-specific raw features,
+\item normalized 15-dimensional behavioral vectors,
+\item protocol auxiliary feature vectors,
+\item mitigation decisions and timestamps.
+\end{itemize}
+Ground-truth labels are produced by orchestrator scripts that control workload start/stop boundaries and scenario IDs. Label quality is validated by cross-checking orchestrator logs with proxy event timestamps.
+
+\subsection{Feature Construction Workflow}
+The end-to-end feature workflow is:
+\begin{enumerate}
+\item parse protocol-native packets/messages,
+\item extract protocol-specific raw features,
+\item apply protocol mapping $\Phi_p$ to produce normalized features,
+\item append protocol identity and auxiliary dimensions,
+\item export fixed 33-dimensional vectors with labels.
+\end{enumerate}
+Windowed features are computed with source-scoped sliding windows; per-message and aggregated features are emitted with aligned timestamps to support both online inference and offline training.
+
+\subsection{Model Training and Runtime Integration}
+Candidate classifiers (tree-based and lightweight neural models) are trained on the combined MQTT+CoAP labeled dataset. Model selection prioritizes macro F1, per-protocol robustness, inference latency, and memory footprint. The selected model is exported to an edge-compatible runtime format for integration in the C++ proxy inference stage.
+
+\subsection{Implementation and Reproducibility Notes}
+The proxy core is implemented in C++ with protocol modules for MQTT and CoAP. The testbed is designed for reproducible execution through scripted scenario runners and containerized service orchestration. Final artifact release includes dataset generation scripts, normalization validation scripts, and experiment automation for figure/table regeneration.
+
+\subsection{Planned Continuation}
+The next sections complete the evaluation loop with explicit baselines, metrics, ablations, stress tests, and statistical significance analysis, followed by quantitative results.
 
 \begin{thebibliography}{00}
 \bibitem{rw_placeholder_1} Placeholder: protocol-specific MQTT security baseline (to be replaced with verified citation).
