@@ -671,7 +671,7 @@ Measure degradation curves: throughput vs. attack intensity, latency vs. attack 
 3. Normalized feature specification v1.0 (Section 3.4)
 4. Related-work screening + mapping worksheet (companion draft file)
 
-## Week 2
+## Week 2 - completed
 
 - Set up MQTT testbed (Mosquitto, Paho clients, attack scripts)
 - Set up CoAP testbed (Californium, aiocoap/libcoap clients, attack scripts)
