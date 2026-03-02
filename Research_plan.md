@@ -683,6 +683,58 @@ Measure degradation curves: throughput vs. attack intensity, latency vs. attack 
 - Complete CoAP dataset collection and labeling
 - Implement and validate normalization mapping (Python prototype)
 
+### Week 3 Step 1: Traffic Run Matrix (Frozen v0.1)
+
+The following matrix is fixed for Week 3 data collection to ensure reproducibility and balanced labels.
+
+**Run policy (applies to all rows):**
+
+- 3 repetitions per scenario (`rep=1..3`)
+- 120 seconds per run (except flood scenarios: 60 seconds)
+- 30-second cooldown between runs
+- Host-local proxy mode only (single proxy instance)
+- All runs produce:
+  - raw event log snapshot
+  - metrics snapshot
+  - exported protocol-tagged CSV (`proxy_events.csv` with `run_id`)
+
+#### MQTT Run Matrix
+
+| Run ID Pattern | Scenario | Label | Generator | Target Ingress | Duration |
+| --- | --- | --- | --- | --- | --- |
+| `MQ-BENIGN-R{rep}` | benign telemetry publish | `benign` | `simulators.mqtt.mqtt_benign` | `tcp://127.0.0.1:1884` | 120s |
+| `MQ-FLOOD-R{rep}` | publish flood | `mqtt_publish_flood` | `simulators.mqtt.mqtt_attacks` | `tcp://127.0.0.1:1884` | 60s |
+| `MQ-WILDCARD-R{rep}` | wildcard subscription abuse | `mqtt_wildcard_abuse` | `simulators.mqtt.mqtt_attacks` | `tcp://127.0.0.1:1884` | 120s |
+| `MQ-MALFORM-R{rep}` | malformed/abusive packet profile | `mqtt_protocol_abuse` | `simulators.mqtt.mqtt_attacks` | `tcp://127.0.0.1:1884` | 120s |
+
+#### CoAP Run Matrix
+
+| Run ID Pattern | Scenario | Label | Generator | Target Ingress | Duration |
+| --- | --- | --- | --- | --- | --- |
+| `CP-BENIGN-R{rep}` | benign request mix | `benign` | `simulators.coap.coap_live_benign` | `udp://127.0.0.1:5684` | 120s |
+| `CP-FLOOD-R{rep}` | request flood (`/.well-known/core`) | `coap_request_flood` | `simulators.coap.coap_live_attacks --attack request_flood` | `udp://127.0.0.1:5684` | 60s |
+| `CP-MALFORM-R{rep}` | malformed payload burst | `coap_protocol_abuse` | `simulators.coap.coap_live_attacks --attack malformed_burst` | `udp://127.0.0.1:5684` | 120s |
+
+#### Combined Dataset Targets (Week 3 exit criteria)
+
+- Minimum 21 total runs: `4 MQTT scenarios × 3 reps + 3 CoAP scenarios × 3 reps`
+- Minimum 10,000 total labeled records after export
+- Label distribution constraint: no single class > 45% of total rows
+- Protocol balance constraint: each protocol contributes at least 35% of total rows
+
+#### Run Metadata Schema (mandatory for every export)
+
+Each exported row must include:
+
+- `run_id`
+- `protocol` (`mqtt` / `coap`)
+- `scenario`
+- `label`
+- `rep`
+- `timestamp`
+
+This metadata is required before starting Week 3 Step 2 (labeled feature extractor integration).
+
 ## Week 4
 
 - Feature engineering: validate normalized feature distributions across protocols

@@ -20,6 +20,35 @@ cmake --build build -j
 
 Expected output includes MQTT and CoAP stub start/stop messages.
 
+### 1.1) Run `sentrix_proxy` on host (outside Docker)
+
+If you run the binary directly on your machine, use localhost backend targets (Docker service names are not resolvable on host):
+
+```bash
+cd deploy
+docker compose up -d mosquitto californium-backend metrics-api-stub
+
+cd ../proxy-core/build
+SENTRIX_MQTT_BROKER_HOST=127.0.0.1 \
+SENTRIX_MQTT_BROKER_PORT=1883 \
+SENTRIX_COAP_BACKEND_HOST=127.0.0.1 \
+SENTRIX_COAP_BACKEND_PORT=5683 \
+SENTRIX_MQTT_PROXY_PORT=1884 \
+SENTRIX_COAP_PROXY_PORT=5684 \
+SENTRIX_METRICS_PATH=/tmp/sentrix_metrics.json \
+SENTRIX_EVENTS_PATH=/tmp/sentrix_events.log \
+./sentrix_proxy
+```
+
+In this mode:
+- MQTT ingress is `localhost:1884`
+- CoAP ingress is `localhost:5684/udp`
+
+> Do not run host `./sentrix_proxy` and Docker `proxy-core` at the same time on the same ports (`1884`, `5684`).
+> Pick one mode:
+> - **Docker mode**: dashboard + metrics use container `proxy-core`
+> - **Host mode**: dashboard will not reflect host proxy metrics unless API is also pointed to host files
+
 ## 2) Start baseline containers
 
 ```bash
@@ -79,6 +108,17 @@ curl http://localhost:8080/metrics
 
 `mqtt_msgs` should increase after each publish batch.
 
+If MQTT messages do not show on dashboard:
+
+```bash
+cd deploy
+docker compose ps -a
+docker compose up -d proxy-core
+curl http://localhost:8080/metrics
+```
+
+`proxy-core` must be `Up` (not `Created`/`Exited`).
+
 ## 2.3) View timestamped security event tracker
 
 - Open dashboard at `http://localhost:3000`
@@ -128,7 +168,26 @@ Output file:
 ## 3.1) Export live protocol-tagged proxy events to dataset CSV
 
 ```bash
-python ml-pipeline/src/export_events_to_dataset.py --events-api http://localhost:8080/events --out data/raw/proxy_events.csv
+python ml-pipeline/src/export_events_to_dataset.py \
+	--events-api http://localhost:8080/events \
+	--out data/raw/proxy_events.csv \
+	--run-id MQ-BENIGN-R1 \
+	--scenario mqtt_benign \
+	--label benign \
+	--rep 1
+```
+
+For additional runs, append to the same output file:
+
+```bash
+python ml-pipeline/src/export_events_to_dataset.py \
+	--events-api http://localhost:8080/events \
+	--out data/raw/proxy_events.csv \
+	--run-id CP-FLOOD-R1 \
+	--scenario coap_request_flood \
+	--label coap_request_flood \
+	--rep 1 \
+	--append
 ```
 
 Output file:
