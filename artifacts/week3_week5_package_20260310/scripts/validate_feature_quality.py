@@ -5,11 +5,32 @@ import csv
 import math
 from collections import defaultdict
 from pathlib import Path
+from typing import Mapping, Sequence, TypedDict
 
 
 FEATURE_COLUMNS = [f"f{i:02d}" for i in range(33)]
 NORMALIZED_FEATURE_COLUMNS = [f"f{i:02d}" for i in range(15)]
 PROTOCOL_ID_COLUMNS = ("f15", "f16")
+
+
+class KlRow(TypedDict):
+    attack_class: str
+    feature: str
+    mqtt_count: int
+    coap_count: int
+    kl_mqtt_to_coap: float
+    kl_coap_to_mqtt: float
+    kl_symmetric: float
+
+
+class FeatureQualitySummary(TypedDict):
+    row_count: int
+    run_count: int
+    protocol_counts: dict[str, int]
+    label_counts: dict[str, int]
+    normalized_out_of_range: dict[str, int]
+    protocol_id_violations: int
+    mean_kl_by_class: dict[str, float]
 
 
 def _read_rows(path: Path) -> list[dict[str, str]]:
@@ -93,7 +114,7 @@ def _kl_divergence(p: list[float], q: list[float], *, epsilon: float = 1e-12) ->
     return score
 
 
-def _write_csv(path: Path, rows: list[dict[str, object]], fieldnames: list[str]) -> None:
+def _write_csv(path: Path, rows: Sequence[Mapping[str, object]], fieldnames: list[str]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as fp:
         writer = csv.DictWriter(fp, fieldnames=fieldnames)
@@ -101,7 +122,7 @@ def _write_csv(path: Path, rows: list[dict[str, object]], fieldnames: list[str])
         writer.writerows(rows)
 
 
-def validate_feature_quality(in_csv: Path, out_dir: Path) -> dict[str, object]:
+def validate_feature_quality(in_csv: Path, out_dir: Path) -> FeatureQualitySummary:
     rows = _read_rows(in_csv)
     if not rows:
         raise ValueError(f"dataset is empty: {in_csv}")
@@ -195,7 +216,7 @@ def validate_feature_quality(in_csv: Path, out_dir: Path) -> dict[str, object]:
         for feature in NORMALIZED_FEATURE_COLUMNS:
             class_protocol_feature_values[canonical_class][protocol][feature].append(_to_float(row.get(feature, "0")))
 
-    kl_rows: list[dict[str, object]] = []
+    kl_rows: list[KlRow] = []
     for canonical_class in sorted(class_protocol_feature_values.keys()):
         mqtt_has = any(class_protocol_feature_values[canonical_class]["mqtt"][feature] for feature in NORMALIZED_FEATURE_COLUMNS)
         coap_has = any(class_protocol_feature_values[canonical_class]["coap"][feature] for feature in NORMALIZED_FEATURE_COLUMNS)
@@ -241,7 +262,7 @@ def validate_feature_quality(in_csv: Path, out_dir: Path) -> dict[str, object]:
     mean_kl_by_class: dict[str, float] = {}
     for canonical_class in sorted({row["attack_class"] for row in kl_rows}):
         class_rows = [row for row in kl_rows if row["attack_class"] == canonical_class]
-        mean_kl_by_class[canonical_class] = _mean([float(row["kl_symmetric"]) for row in class_rows])
+        mean_kl_by_class[canonical_class] = _mean([row["kl_symmetric"] for row in class_rows])
 
     return {
         "row_count": len(rows),
@@ -254,7 +275,7 @@ def validate_feature_quality(in_csv: Path, out_dir: Path) -> dict[str, object]:
     }
 
 
-def _write_markdown_report(summary: dict[str, object], out_path: Path) -> None:
+def _write_markdown_report(summary: FeatureQualitySummary, out_path: Path) -> None:
     normalized_violations = summary["normalized_out_of_range"]
     top_violations = sorted(normalized_violations.items(), key=lambda item: item[1], reverse=True)
 
@@ -286,7 +307,7 @@ def _write_markdown_report(summary: dict[str, object], out_path: Path) -> None:
         ]
     )
 
-    mean_kl_by_class = summary["mean_kl_by_class"]
+    mean_kl_by_class: dict[str, float] = summary["mean_kl_by_class"]
     if mean_kl_by_class:
         for canonical_class, kl_value in sorted(mean_kl_by_class.items()):
             lines.append(f"- `{canonical_class}`: {kl_value:.6f}")
