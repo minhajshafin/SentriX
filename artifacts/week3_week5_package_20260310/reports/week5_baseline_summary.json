@@ -1,0 +1,24 @@
+{
+  "dataset_rows": 11209,
+  "run_count": 21,
+  "label_counts": {
+    "benign": 3321,
+    "mqtt_protocol_abuse": 1765,
+    "mqtt_wildcard_abuse": 1605,
+    "mqtt_publish_flood": 1518,
+    "coap_request_flood": 1500,
+    "coap_protocol_abuse": 1500
+  },
+  "protocol_counts": {
+    "mqtt": 6669,
+    "coap": 4540
+  },
+  "best_grouped_cv": {
+    "feature_set": "normalized",
+    "model": "random_forest",
+    "split": "grouped_cv",
+    "accuracy": 0.7792056535279658,
+    "f1_macro": 0.596929582943564,
+    "f1_weighted": 0.8118450220774431
+  }
+}
