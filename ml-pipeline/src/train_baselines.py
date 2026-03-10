@@ -4,6 +4,7 @@ import argparse
 import json
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -12,7 +13,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, f1_score
 from sklearn.model_selection import GroupKFold, StratifiedGroupKFold
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.preprocessing import StandardScaler
 
 
 NORM_FEATURES = [f"f{i:02d}" for i in range(15)]
@@ -47,7 +48,7 @@ def _feature_sets() -> dict[str, list[str]]:
     }
 
 
-def _model_builders(random_state: int) -> dict[str, Pipeline]:
+def _model_builders(random_state: int) -> dict[str, Any]:
     return {
         "logreg": Pipeline(
             steps=[
@@ -94,9 +95,9 @@ def _grouped_cv_splits(df: pd.DataFrame, y: np.ndarray, n_splits: int, random_st
 
 def _metrics(y_true: np.ndarray, y_pred: np.ndarray) -> tuple[float, float, float]:
     return (
-        accuracy_score(y_true, y_pred),
-        f1_score(y_true, y_pred, average="macro", zero_division=0),
-        f1_score(y_true, y_pred, average="weighted", zero_division=0),
+        float(accuracy_score(y_true, y_pred)),
+        float(f1_score(y_true, y_pred, average="macro", zero_division=0)),
+        float(f1_score(y_true, y_pred, average="weighted", zero_division=0)),
     )
 
 
@@ -104,7 +105,7 @@ def _evaluate_grouped_cv(
     df: pd.DataFrame,
     features: list[str],
     model_name: str,
-    model,
+    model: Any,
     n_splits: int,
     random_state: int,
 ) -> EvalResult:
@@ -132,7 +133,7 @@ def _evaluate_cross_protocol(
     df: pd.DataFrame,
     features: list[str],
     model_name: str,
-    model,
+    model: Any,
 ) -> list[EvalResult]:
     x = df[features].to_numpy(dtype=np.float32)
     y = df["label"].to_numpy()
