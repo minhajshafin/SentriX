@@ -29,6 +29,10 @@ dashboard/pnpm-debug.log*
 # CMake / C++ build outputs
 proxy-core/build/
 
+# Local packaging outputs
+artifacts/
+*.tar.gz
+
 # Java / Maven build outputs
 deploy/californium/target/
 
@@ -44,3 +48,10 @@ ml-pipeline/reports
 # Research paper: keep only main tex source tracked
 Research_Paper/*
 !Research_Paper/conference_101719.tex
+# Common LaTeX build byproducts (for any tracked paper files)
+Research_Paper/*.aux
+Research_Paper/*.fdb_latexmk
+Research_Paper/*.fls
+Research_Paper/*.log
+Research_Paper/*.out
+Research_Paper/*.toc

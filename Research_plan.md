@@ -10,6 +10,22 @@ Title Options :
 
 ---
 
+## Current Status Snapshot (as of 2026-03-10)
+
+- **Week 1:** Completed (objective, threat model, normalized feature spec freeze)
+- **Week 2:** Completed (MQTT/CoAP testbeds + collection pipeline)
+- **Week 3:** Completed (21/21 matrix runs, 11,209 labeled rows, all exit criteria satisfied)
+- **Week 4:** Completed (feature quality validation + KL alignment reports)
+- **Week 5:** In progress (baseline training pipeline operational; LogReg + RandomForest results produced)
+
+**Current bottleneck:** cross-protocol generalization is weak relative to grouped CV performance.
+
+**Next immediate actions:**
+
+1. Add LightGBM and MLP baselines.
+2. Run full 5-fold baseline sweep with per-class breakdown.
+3. Compare feature ablations and select Week 6 model candidate.
+
 # 1. Research Scope
 
 This research will focus on:
