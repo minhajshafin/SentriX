@@ -8,12 +8,19 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+from sklearn.base import clone
 from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, f1_score
+from sklearn.metrics import accuracy_score, f1_score, precision_recall_fscore_support
 from sklearn.model_selection import GroupKFold, StratifiedGroupKFold
+from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+
+try:
+    from lightgbm import LGBMClassifier
+except Exception:
+    LGBMClassifier = None
 
 
 NORM_FEATURES = [f"f{i:02d}" for i in range(15)]
@@ -49,7 +56,7 @@ def _feature_sets() -> dict[str, list[str]]:
 
 
 def _model_builders(random_state: int) -> dict[str, Any]:
-    return {
+    models: dict[str, Any] = {
         "logreg": Pipeline(
             steps=[
                 ("scale", StandardScaler()),
@@ -80,7 +87,84 @@ def _model_builders(random_state: int) -> dict[str, Any]:
             l2_regularization=1e-3,
             random_state=random_state,
         ),
+        "mlp": Pipeline(
+            steps=[
+                ("scale", StandardScaler()),
+                (
+                    "clf",
+                    MLPClassifier(
+                        hidden_layer_sizes=(32, 16),
+                        activation="relu",
+                        alpha=5e-4,
+                        learning_rate_init=1e-3,
+                        max_iter=180,
+                        early_stopping=False,
+                        random_state=random_state,
+                    ),
+                ),
+            ]
+        ),
     }
+
+    if LGBMClassifier is not None:
+        models["lightgbm"] = LGBMClassifier(
+            n_estimators=140,
+            learning_rate=0.08,
+            num_leaves=31,
+            subsample=0.9,
+            colsample_bytree=0.9,
+            objective="multiclass",
+            class_weight="balanced",
+            random_state=random_state,
+            n_jobs=1,
+            verbosity=-1,
+        )
+
+    return models
+
+
+def _per_class_rows(
+    *,
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    feature_set: str,
+    model: str,
+    split: str,
+) -> list[dict[str, object]]:
+    labels = sorted({*map(str, y_true), *map(str, y_pred)})
+    p, r, f1, s = precision_recall_fscore_support(y_true, y_pred, labels=labels, zero_division=0)
+    p_arr = np.atleast_1d(np.asarray(p, dtype=float))
+    r_arr = np.atleast_1d(np.asarray(r, dtype=float))
+    f1_arr = np.atleast_1d(np.asarray(f1, dtype=float))
+    s_arr = np.atleast_1d(np.asarray(s if s is not None else np.zeros(len(labels), dtype=int), dtype=int))
+    rows: list[dict[str, object]] = []
+    for idx, label in enumerate(labels):
+        rows.append(
+            {
+                "feature_set": feature_set,
+                "model": model,
+                "split": split,
+                "label": label,
+                "precision": float(p_arr[idx]),
+                "recall": float(r_arr[idx]),
+                "f1": float(f1_arr[idx]),
+                "support": int(s_arr[idx]),
+            }
+        )
+    return rows
+
+
+def _fit_predict(model_name: str, fit_model: Any, x_train: np.ndarray, y_train: np.ndarray, x_test: np.ndarray) -> np.ndarray:
+    # Work around sklearn/py3.14 MLP issues with string labels by training on encoded targets.
+    if model_name == "mlp":
+        encoder = LabelEncoder()
+        y_train_enc = encoder.fit_transform(y_train)
+        fit_model.fit(x_train, y_train_enc)
+        pred_enc = fit_model.predict(x_test)
+        return encoder.inverse_transform(np.asarray(pred_enc, dtype=int))
+
+    fit_model.fit(x_train, y_train)
+    return fit_model.predict(x_test)
 
 
 def _grouped_cv_splits(df: pd.DataFrame, y: np.ndarray, n_splits: int, random_state: int):
@@ -108,18 +192,22 @@ def _evaluate_grouped_cv(
     model: Any,
     n_splits: int,
     random_state: int,
-) -> EvalResult:
+) -> tuple[EvalResult, list[dict[str, object]]]:
     x = df[features].to_numpy(dtype=np.float32)
     y = df["label"].to_numpy()
 
     fold_scores: list[tuple[float, float, float]] = []
+    y_true_all: list[np.ndarray] = []
+    y_pred_all: list[np.ndarray] = []
     for train_idx, test_idx in _grouped_cv_splits(df, y, n_splits=n_splits, random_state=random_state):
-        model.fit(x[train_idx], y[train_idx])
-        pred = model.predict(x[test_idx])
+        fit_model = clone(model)
+        pred = _fit_predict(model_name, fit_model, x[train_idx], y[train_idx], x[test_idx])
         fold_scores.append(_metrics(y[test_idx], pred))
+        y_true_all.append(y[test_idx])
+        y_pred_all.append(pred)
 
     avg = np.mean(np.asarray(fold_scores), axis=0)
-    return EvalResult(
+    agg = EvalResult(
         feature_set="",
         model=model_name,
         split="grouped_cv",
@@ -127,6 +215,14 @@ def _evaluate_grouped_cv(
         f1_macro=float(avg[1]),
         f1_weighted=float(avg[2]),
     )
+    per_class = _per_class_rows(
+        y_true=np.concatenate(y_true_all),
+        y_pred=np.concatenate(y_pred_all),
+        feature_set="",
+        model=model_name,
+        split="grouped_cv",
+    )
+    return agg, per_class
 
 
 def _evaluate_cross_protocol(
@@ -134,12 +230,13 @@ def _evaluate_cross_protocol(
     features: list[str],
     model_name: str,
     model: Any,
-) -> list[EvalResult]:
+) -> tuple[list[EvalResult], list[dict[str, object]]]:
     x = df[features].to_numpy(dtype=np.float32)
     y = df["label"].to_numpy()
     protocol = df["protocol"].to_numpy()
 
     results: list[EvalResult] = []
+    per_class_rows: list[dict[str, object]] = []
     directions = [
         ("mqtt", "coap", "cross_mqtt_to_coap"),
         ("coap", "mqtt", "cross_coap_to_mqtt"),
@@ -150,8 +247,8 @@ def _evaluate_cross_protocol(
         test_idx = np.where(protocol == test_proto)[0]
         if len(train_idx) == 0 or len(test_idx) == 0:
             continue
-        model.fit(x[train_idx], y[train_idx])
-        pred = model.predict(x[test_idx])
+        fit_model = clone(model)
+        pred = _fit_predict(model_name, fit_model, x[train_idx], y[train_idx], x[test_idx])
         acc, f1m, f1w = _metrics(y[test_idx], pred)
         results.append(
             EvalResult(
@@ -163,8 +260,17 @@ def _evaluate_cross_protocol(
                 f1_weighted=float(f1w),
             )
         )
+        per_class_rows.extend(
+            _per_class_rows(
+                y_true=y[test_idx],
+                y_pred=pred,
+                feature_set="",
+                model=model_name,
+                split=split_name,
+            )
+        )
 
-    return results
+    return results, per_class_rows
 
 
 def train_baselines(
@@ -180,6 +286,7 @@ def train_baselines(
     out_dir.mkdir(parents=True, exist_ok=True)
 
     rows: list[dict[str, object]] = []
+    per_class_rows: list[dict[str, object]] = []
     all_feature_sets = _feature_sets()
     all_models = _model_builders(random_state=random_state)
     feature_sets = {name: all_feature_sets[name] for name in selected_feature_sets}
@@ -188,7 +295,7 @@ def train_baselines(
     for feature_set_name, features in feature_sets.items():
         for model_name, model in model_builders.items():
             print(f"[train] feature_set={feature_set_name} model={model_name}", flush=True)
-            cv_result = _evaluate_grouped_cv(
+            cv_result, cv_per_class = _evaluate_grouped_cv(
                 df=df,
                 features=features,
                 model_name=model_name,
@@ -198,11 +305,22 @@ def train_baselines(
             )
             cv_result.feature_set = feature_set_name
             rows.append(cv_result.__dict__)
+            for row in cv_per_class:
+                row["feature_set"] = feature_set_name
+            per_class_rows.extend(cv_per_class)
 
-            cross_results = _evaluate_cross_protocol(df=df, features=features, model_name=model_name, model=model)
+            cross_results, cross_per_class = _evaluate_cross_protocol(
+                df=df,
+                features=features,
+                model_name=model_name,
+                model=model,
+            )
             for result in cross_results:
                 result.feature_set = feature_set_name
                 rows.append(result.__dict__)
+            for row in cross_per_class:
+                row["feature_set"] = feature_set_name
+            per_class_rows.extend(cross_per_class)
             print(
                 f"[done] feature_set={feature_set_name} model={model_name} "
                 f"cv_f1_macro={cv_result.f1_macro:.4f}",
@@ -211,6 +329,8 @@ def train_baselines(
 
     result_df = pd.DataFrame(rows).sort_values(["split", "f1_macro", "accuracy"], ascending=[True, False, False])
     result_df.to_csv(out_dir / "week5_baseline_metrics.csv", index=False)
+    per_class_df = pd.DataFrame(per_class_rows).sort_values(["split", "feature_set", "model", "f1"], ascending=[True, True, True, False])
+    per_class_df.to_csv(out_dir / "week5_baseline_per_class_metrics.csv", index=False)
 
     grouped = result_df[result_df["split"] == "grouped_cv"].sort_values("f1_macro", ascending=False)
     best = grouped.iloc[0].to_dict() if not grouped.empty else {}
@@ -257,6 +377,7 @@ def _write_markdown(result_df: pd.DataFrame, out_path: Path) -> None:
         "",
         "Artifacts:",
         "- `week5_baseline_metrics.csv`",
+        "- `week5_baseline_per_class_metrics.csv`",
         "- `week5_baseline_summary.json`",
     ]
     out_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -277,7 +398,7 @@ def main() -> None:
     parser.add_argument(
         "--models",
         default="logreg,random_forest",
-        help="Comma-separated: logreg,random_forest,hist_gb",
+        help="Comma-separated: logreg,random_forest,hist_gb,mlp,lightgbm",
     )
     args = parser.parse_args()
 

@@ -16,15 +16,15 @@ Title Options :
 - **Week 2:** Completed (MQTT/CoAP testbeds + collection pipeline)
 - **Week 3:** Completed (21/21 matrix runs, 11,209 labeled rows, all exit criteria satisfied)
 - **Week 4:** Completed (feature quality validation + KL alignment reports)
-- **Week 5:** In progress (baseline training pipeline operational; LogReg + RandomForest results produced)
+- **Week 5:** Completed (5-fold baseline sweep completed with LogReg, RandomForest, MLP, LightGBM + per-class outputs)
 
 **Current bottleneck:** cross-protocol generalization is weak relative to grouped CV performance.
 
 **Next immediate actions:**
 
-1. Add LightGBM and MLP baselines.
-2. Run full 5-fold baseline sweep with per-class breakdown.
-3. Compare feature ablations and select Week 6 model candidate.
+1. Select Week 6 model candidate using accuracy-latency-generalization tradeoff.
+2. Run feature ablations and finalize deployable feature subset.
+3. Begin model compression/export workflow (quantization/pruning + ONNX).
 
 # 1. Research Scope
 
@@ -786,21 +786,25 @@ This metadata is required before starting Week 3 Step 2 (labeled feature extract
 - `ml-pipeline/reports/feature_summary_by_protocol.csv`
 - `ml-pipeline/reports/kl_alignment_by_class.csv`
 
-## Week 5 - in progress
+## Week 5 - completed
 
 - Train candidate models (Random Forest, LightGBM, MLP) on combined dataset
 - 5-fold cross-validation, per-attack-class and per-protocol evaluation
 - Cross-protocol transfer experiments
 
-### Week 5 Progress Status (Partial)
+### Week 5 Completion Status (Done)
 
 - ✅ CPU-friendly baseline training pipeline implemented
-- ✅ Baseline results produced for `LogisticRegression` and `RandomForest`
-- ✅ Grouped CV and cross-protocol transfer runs completed (official run: 3-fold)
-- ⏳ Remaining for full Week 5 completion:
-- LightGBM and MLP baselines
-- 5-fold evaluation sweep (current official baseline run is 3-fold)
-- Per-attack-class deep-dive tables/plots beyond summary metrics
+- ✅ Baseline results produced for `LogisticRegression`, `RandomForest`, `MLP`, and `LightGBM`
+- ✅ Official 5-fold grouped CV + cross-protocol transfer run completed
+- ✅ Per-class metrics artifact exported for attack-class deep-dive analysis
+- ⚠️ Cross-protocol generalization remains substantially weaker than grouped CV (carried into Week 6 model selection criteria)
+
+**Week 5 Key Result Snapshot (official 5-fold run):**
+
+- Best grouped CV: `LightGBM` on `full` features (`f1_macro=0.5977`, `accuracy=0.7796`)
+- Near-tied grouped CV: `LightGBM` on `normalized_plus_pid` (`f1_macro=0.5974`)
+- Cross-protocol transfer remains low (macro-F1 mostly in `~0.017-0.093` range; best observed `~0.093` on `logreg` in `mqtt->coap`)
 
 **Week 5 Deliverables Produced So Far:**
 
@@ -808,7 +812,22 @@ This metadata is required before starting Week 3 Step 2 (labeled feature extract
 2. Reports:
 - `ml-pipeline/reports/week5_baseline_results.md`
 - `ml-pipeline/reports/week5_baseline_metrics.csv`
+- `ml-pipeline/reports/week5_baseline_per_class_metrics.csv`
 - `ml-pipeline/reports/week5_baseline_summary.json`
+
+``` bash
+
+PYTHONWARNINGS=ignore OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 \
+/home/billy/X/SentriX/.venv/bin/python -u ml-pipeline/src/train_baselines.py \
+  --in data/raw/week3_runs_labeled.csv \
+  --out-dir ml-pipeline/reports \
+  --report ml-pipeline/reports/week5_baseline_results.md \
+  --folds 5 \
+  --seed 42 \
+  --feature-sets normalized_plus_pid,full \
+  --models logreg,random_forest,mlp,lightgbm
+
+  ```
 
 ## Week 6
 
