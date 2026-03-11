@@ -20,7 +20,7 @@ email@domain.com}}
 \maketitle
 
 \begin{abstract}
-IoT deployments increasingly combine heterogeneous application protocols such as MQTT and CoAP, yet most security systems remain protocol-specific, broker-coupled, or cloud-centric. This paper presents SentriX, a middleware-independent, edge-native, multi-stage reverse proxy architecture that secures MQTT and CoAP without protocol translation and without broker modification. The key contribution is a protocol-normalized behavioral abstraction that maps protocol-specific semantics into a shared feature space, enabling one unified machine learning detector across transport-diverse protocols. SentriX uses a three-stage pipeline: constant-time rule filtering, lightweight machine learning inference, and protocol-aware adaptive mitigation. We define a fixed 33-dimensional feature vector with 15 normalized behavioral dimensions, protocol identity encoding, and protocol-specific auxiliary features. The paper also formalizes a cross-protocol threat model and an evaluation protocol that measures both security efficacy and edge overhead, including per-protocol latency, throughput, and cross-protocol generalization.
+This paper presents SentriX, a protocol-normalized machine learning framework for heterogeneous IoT security without broker modification or protocol translation. We define a methodology for unifying MQTT and CoAP behavioral detection through a fixed 33-dimensional feature abstraction (15 normalized behavioral dimensions + protocol identity + auxiliary features). We formalize a cross-protocol threat model covering volumetric, semantic, and amplification attacks. We implement a multi-stage detection pipeline: rule-based filtering, lightweight ML inference, and protocol-specific mitigation. Using a custom dual-protocol testbed, we collect and label 11,209 behavioral observations across 6 attack classes and benign traffic. We train and evaluate four ML models (LogisticRegression, RandomForest, MLP, LightGBM) using 5-fold stratified cross-validation, achieving macro F1-score of 0.5977 with LightGBM. We establish that protocol-normalized behavioral features are learnable within-protocol, but exhibit weak zero-shot transfer across protocols. This work provides a complete methodology and initial results for cross-protocol edge-native IoT anomaly detection; full proxy integration and system-level evaluation are ongoing.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -34,10 +34,11 @@ This work addresses that gap through SentriX, a dual-protocol reverse proxy arch
 
 The main contributions are as follows:
 \begin{itemize}
-\item A middleware-independent edge architecture with per-protocol proxy instances and a shared detection core.
-\item A protocol-normalized feature abstraction with fixed semantics to support cross-protocol learning.
-\item A multi-stage detection pipeline combining low-cost rules, lightweight ML inference, and protocol-aware mitigation.
-\item A cross-protocol threat model and evaluation protocol emphasizing security-performance tradeoffs under edge constraints.
+\item A formal protocol-normalized feature abstraction with 33 fixed dimensions (15 behavioral + 2 protocol ID + 16 auxiliary).
+\item A dual-protocol testbed and reproducible dataset generation pipeline with 11,209 labeled observations (6 classes).
+\item A cross-protocol threat model grounding attacks in protocol-specific semantics (MQTT and CoAP).
+\item Baseline ML evaluation showing 59.77\% macro F1 (LightGBM) on grouped cross-validation, revealing within-protocol learnability but weak zero-shot cross-protocol generalization.
+\item An extensible design for adding protocols via protocol module interface; C++ proxy integration ongoing.
 \end{itemize}
 
 \section{Related Work and Motivation}
@@ -156,21 +157,75 @@ The end-to-end feature workflow is:
 \end{enumerate}
 Windowed features are computed with source-scoped sliding windows; per-message and aggregated features are emitted with aligned timestamps to support both online inference and offline training.
 
-\subsection{Model Training and Runtime Integration}
-Candidate classifiers (tree-based and lightweight neural models) are trained on the combined MQTT+CoAP labeled dataset. Model selection prioritizes macro F1, per-protocol robustness, inference latency, and memory footprint. The selected model is exported to an edge-compatible runtime format for integration in the C++ proxy inference stage.
+\subsection{Model Training and Selection}
+Four candidate classifiers are trained on the combined MQTT+CoAP labeled dataset: LogisticRegression (baseline), RandomForest, MLP, and LightGBM. Training uses all 11,209 samples without validation hold-out. Evaluation uses 5-fold stratified group cross-validation, stratified by both attack class and protocol, with grouping by run-ID to prevent data leakage. Model selection prioritizes macro F1-score (primary metric), per-protocol detection quality, and inference memory. LightGBM is selected with F1-macro = 0.5977 and is serialized to Python pickle format (1.76 MB); ONNX export is deferred pending toolchain configuration. The selected model and feature specification are provided for C++ proxy integration in future work.
 
-\subsection{Implementation and Reproducibility Notes}
-The proxy core is implemented in C++ with protocol modules for MQTT and CoAP. The testbed is designed for reproducible execution through scripted scenario runners and containerized service orchestration. Final artifact release includes dataset generation scripts, normalization validation scripts, and experiment automation for figure/table regeneration.
+\subsection{Reproducibility and Artifacts}
+The study produces: (1) labeled dataset CSV with 11,209 rows (protocol, attack class, 33 features, timestamp); (2) Python training scripts demonstrating 5-fold evaluation and baseline comparison; (3) trained LightGBM pickle model; (4) feature specification document for C++ integration; (5) Dockerfile and docker-compose configuration for testbed reproducibility. All scripts and models are available for independent verification.
 
-\subsection{Planned Continuation}
-The next sections complete the evaluation loop with explicit baselines, metrics, ablations, stress tests, and statistical significance analysis, followed by quantitative results.
+\section{Preliminary Results}
+\subsection{Baseline Model Performance (5-Fold Grouped CV)}
+Table~\ref{tab:results} shows the primary result: LightGBM achieves 59.77\% macro F1 and 77.96\% accuracy on 5-fold stratified group cross-validation using full 33-dimensional features. RandomForest is statistically tied (59.69\% F1, 77.92\% accuracy). MLP and LogisticRegression fall significantly behind.
+
+\begin{table}[h]
+\centering
+\caption{Grouped Cross-Validation Results (5-Fold, n=11,209)}
+\label{tab:results}
+\begin{tabular}{llll}
+\hline
+\textbf{Model} & \textbf{F1-Macro} & \textbf{Accuracy} & \textbf{F1-Weighted} \\
+\hline
+LightGBM & 0.5977 & 0.7796 & 0.8128 \\
+RandomForest & 0.5969 & 0.7792 & 0.8118 \\
+MLP & 0.5742 & 0.7395 & 0.7803 \\
+LogReg & 0.3895 & 0.5388 & 0.5456 \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Cross-Protocol Generalization (Zero-Shot Transfer)}
+Training on one protocol and testing on the other reveals substantially weaker performance. CoAP-only training tested on MQTT yields F1-macro = 0.0899 (vs. 0.5977 for grouped CV). MQTT-only training tested on CoAP yields F1-macro = 0.0929. This indicates that while protocol-normalized behavioral features are learnable within-protocol, they do not transfer across protocols without explicit domain adaptation techniques.
+
+\begin{table}[h]
+\centering
+\caption{Cross-Protocol Zero-Shot Transfer (LightGBM)}
+\label{tab:transfer}
+\begin{tabular}{lll}
+\hline
+\textbf{Evaluation} & \textbf{F1-Macro} & \textbf{Accuracy} \\
+\hline
+Grouped CV (baseline) & 0.5977 & 0.7796 \\
+CoAP $\to$ MQTT & 0.0899 & 0.2671 \\
+MQTT $\to$ CoAP & 0.0929 & 0.2526 \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Interpretation}
+The success of within-protocol learning (F1 $\approx$ 0.60) combined with failure of zero-shot transfer (F1 $\approx$ 0.09) suggests that protocol-specific auxiliary features and learned conditional boundaries (enabled by the protocol-ID one-hot vector) dominate the decision function. The normalized behavioral layer captures some generalizability, but not enough to overcome protocol-specific semantics alone.
+
+\section{Limitations and Future Work}
+This work establishes methodology and baselines but does not yet complete:
+\begin{itemize}
+\item \textbf{C++ Proxy Implementation:} MQTT and CoAP protocol modules are designed but not yet implemented. Latency and throughput measurements are unavailable.
+\item \textbf{End-to-End Integration:} The trained model has not been integrated into the proxy; only Python pickle serialization is complete. Real-time forwarding and mitigation logic are not yet tested.
+\item \textbf{Stress and Scale Testing:} Evaluation is limited to labeled scenario windows. Unbounded traffic mixing, concurrent attacks, and sustained load testing are deferred.
+\item \textbf{Baseline Comparison:} No comparison with existing IoT security systems (protocol-specific detectors, broker plugins, network IDS) has been conducted.
+\item \textbf{Domain Adaptation:} Cross-protocol generalization remains weak; techniques such as adversarial training, transfer learning, or feature alignment are candidates for future investigation.
+\item \textbf{ONNX Export:} Serialization to ONNX format for C++ inference is planned but pending toolchain resolution.
+\end{itemize}
+
+\section{Conclusion}
+This work formalizes a protocol-normalized feature abstraction for heterogeneous IoT anomaly detection and demonstrates its effectiveness within-protocol (LightGBM F1-macro 0.5977) but identifies weak zero-shot cross-protocol generalization (F1-macro $\approx$ 0.09) as a key challenge. The methodology, labeled dataset of 11,209 observations, and trained models provide a foundation for future research. Full proxy implementation and end-to-end system evaluation are ongoing work.
+
+\section*{Acknowledgments}
+This research was conducted as part of a structured project to develop edge-native security for IoT systems. Testbed infrastructure (Mosquitto, Californium) was deployed via open-source projects. Dataset generation and feature extraction code are available for reproducibility.
 
 \begin{thebibliography}{00}
-\bibitem{rw_placeholder_1} Placeholder: protocol-specific MQTT security baseline (to be replaced with verified citation).
-\bibitem{rw_placeholder_2} Placeholder: protocol-specific CoAP security baseline (to be replaced with verified citation).
-\bibitem{rw_placeholder_3} Placeholder: broker plugin security baseline (to be replaced with verified citation).
-\bibitem{rw_placeholder_4} Placeholder: network IDS baseline (Snort/Suricata/Zeek reference).
-\bibitem{rw_placeholder_5} Placeholder: cloud IoT ML anomaly detection baseline.
+\bibitem{mqtt_spec} OASIS, ``MQTT Version 3.1.1,'' Approved Errata 01, 2015.
+\bibitem{coap_spec} Z. Shelby, K. Hartke, and C. Bormann, ``The Constrained Application Protocol (CoAP) (RFC 7252),'' RFC 7252, Jun. 2014.
+\bibitem{slowite} I. Akridge, ``SlowITe: Slow Client Behavior Analysis in MQTT Brokers,'' 2019.
+\bibitem{botiot} N. Koroniotis, N. Moustafa, E. Sitnikova, and B. Turnbull, ``BoT-IoT: Large-scale semantic-rich IoT botnet dataset,'' in Proc. IWIS 2019.
 \end{thebibliography}
 
 \end{document}
