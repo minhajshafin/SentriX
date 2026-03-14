@@ -25,17 +25,46 @@ if(SENTRIX_ENABLE_ONNX_RUNTIME)
     find_path(ONNXRUNTIME_INCLUDE_DIR onnxruntime_cxx_api.h
         HINTS
             $ENV{ONNXRUNTIME_ROOT}/include
+            ${CMAKE_SOURCE_DIR}/third_party/onnxruntime/include
             /usr/include
             /usr/local/include)
+
+    if(NOT ONNXRUNTIME_INCLUDE_DIR)
+        find_path(ONNXRUNTIME_INCLUDE_DIR onnxruntime_cxx_api.h
+            HINTS
+                $ENV{ONNXRUNTIME_ROOT}/include
+                ${CMAKE_SOURCE_DIR}/third_party/onnxruntime/include
+                /usr/include
+                /usr/local/include
+            PATH_SUFFIXES
+                onnxruntime/core/session)
+    endif()
 
     find_library(ONNXRUNTIME_LIBRARY onnxruntime
         HINTS
             $ENV{ONNXRUNTIME_ROOT}/lib
+            ${CMAKE_SOURCE_DIR}/third_party/onnxruntime/lib
             /usr/lib
             /usr/local/lib)
 
+    if(NOT ONNXRUNTIME_LIBRARY)
+        find_file(ONNXRUNTIME_LIBRARY_FILE
+            NAMES
+                libonnxruntime.so
+                libonnxruntime.so.1
+                libonnxruntime.so.1.24.3
+            HINTS
+                $ENV{ONNXRUNTIME_ROOT}/lib
+                ${CMAKE_SOURCE_DIR}/third_party/onnxruntime/lib
+                /usr/lib
+                /usr/local/lib)
+        if(ONNXRUNTIME_LIBRARY_FILE)
+            set(ONNXRUNTIME_LIBRARY ${ONNXRUNTIME_LIBRARY_FILE})
+        endif()
+    endif()
+
     if(NOT ONNXRUNTIME_INCLUDE_DIR OR NOT ONNXRUNTIME_LIBRARY)
-        message(FATAL_ERROR "SENTRIX_ENABLE_ONNX_RUNTIME=ON but ONNX Runtime not found. Set ONNXRUNTIME_ROOT or install onnxruntime dev package.")
+        message(FATAL_ERROR "SENTRIX_ENABLE_ONNX_RUNTIME=ON but ONNX Runtime C++ SDK not found. Set ONNXRUNTIME_ROOT to an SDK path containing include/ and lib/, or place SDK under proxy-core/third_party/onnxruntime.")
     endif()
 
     target_include_directories(sentrix_proxy PRIVATE ${ONNXRUNTIME_INCLUDE_DIR})

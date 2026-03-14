@@ -1,0 +1,7 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/billy/X/SentriX/proxy-core/build-onnx/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

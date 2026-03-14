@@ -280,4 +280,9 @@ DetectionResult evaluate(const NormalizedFeatureVector& features, ProtocolKind p
     return out;
 }
 
+bool isOnnxRuntimeActive() {
+    static const InferenceEngine inference_engine;
+    return inference_engine.usingOnnx();
+}
+
 }  // namespace sentrix::detection

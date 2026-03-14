@@ -1,0 +1,3 @@
+/home/billy/X/SentriX/proxy-core/build-onnx/CMakeFiles/sentrix_proxy.dir
+/home/billy/X/SentriX/proxy-core/build-onnx/CMakeFiles/edit_cache.dir
+/home/billy/X/SentriX/proxy-core/build-onnx/CMakeFiles/rebuild_cache.dir

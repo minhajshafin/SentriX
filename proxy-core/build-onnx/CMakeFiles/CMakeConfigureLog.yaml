@@ -1602,3 +1602,173 @@ events:
       CMAKE_SYSTEM_LIBRARY_PATH:
         - "/usr/lib/X11"
 ...
+
+---
+events:
+  -
+    kind: "find-v1"
+    backtrace:
+      - "CMakeLists.txt:25 (find_path)"
+    mode: "path"
+    variable: "ONNXRUNTIME_INCLUDE_DIR"
+    description: "Path to a file."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: true
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "onnxruntime_cxx_api.h"
+    candidate_directories:
+      - "/include/"
+      - "/home/billy/X/SentriX/proxy-core/third_party/onnxruntime/include/"
+      - "/usr/include/"
+      - "/usr/local/include/"
+      - "/home/billy/.local/share/mise/installs/node/25.2.1/bin/"
+      - "/home/billy/.local/share/mise/installs/python/3.14.2/bin/"
+      - "/home/billy/.local/share/omarchy/bin/"
+      - "/home/billy/.config/Code/User/globalStorage/github.copilot-chat/debugCommand/"
+      - "/home/billy/.config/Code/User/globalStorage/github.copilot-chat/copilotCli/"
+      - "/home/billy/.local/share/mise/shims/"
+      - "/home/billy/.local/bin/"
+      - "/usr/local/sbin/"
+      - "/usr/local/bin/"
+      - "/usr/bin/"
+      - "/usr/lib/jvm/default/bin/"
+      - "/usr/bin/site_perl/"
+      - "/usr/bin/vendor_perl/"
+      - "/usr/bin/core_perl/"
+      - "/home/billy/.vscode/extensions/ms-python.debugpy-2025.18.0-linux-x64/bundled/scripts/noConfigScripts/"
+      - "/usr/local/include/"
+      - "/usr/local/"
+      - "/usr/include/"
+      - "/usr/"
+      - "/include/"
+      - "/usr/X11R6/include/"
+      - "/usr/X11R6/"
+      - "/usr/pkg/include/"
+      - "/usr/pkg/"
+      - "/opt/include/"
+      - "/opt/"
+      - "/usr/include/X11/"
+    searched_directories:
+      - "/include/onnxruntime_cxx_api.h"
+    found: "/home/billy/X/SentriX/proxy-core/third_party/onnxruntime/include/"
+    search_context:
+      ENV{PATH}:
+        - "/home/billy/.local/share/mise/installs/node/25.2.1/bin"
+        - "/home/billy/.local/share/mise/installs/python/3.14.2/bin"
+        - "/home/billy/.local/share/omarchy/bin"
+        - "/home/billy/.config/Code/User/globalStorage/github.copilot-chat/debugCommand"
+        - "/home/billy/.config/Code/User/globalStorage/github.copilot-chat/copilotCli"
+        - "/home/billy/.local/share/mise/shims"
+        - "/home/billy/.local/share/omarchy/bin"
+        - "/home/billy/.local/share/../bin"
+        - "/usr/local/sbin"
+        - "/usr/local/bin"
+        - "/usr/bin"
+        - "/usr/lib/jvm/default/bin"
+        - "/usr/bin/site_perl"
+        - "/usr/bin/vendor_perl"
+        - "/usr/bin/core_perl"
+        - "/home/billy/.vscode/extensions/ms-python.debugpy-2025.18.0-linux-x64/bundled/scripts/noConfigScripts"
+        - "/home/billy/.local/bin"
+      CMAKE_INSTALL_PREFIX: "/usr/local"
+      CMAKE_SYSTEM_PREFIX_PATH:
+        - "/usr/local"
+        - "/usr"
+        - "/"
+        - "/usr"
+        - "/usr/local"
+        - "/usr/X11R6"
+        - "/usr/pkg"
+        - "/opt"
+      CMAKE_SYSTEM_INCLUDE_PATH:
+        - "/usr/include/X11"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "CMakeLists.txt:43 (find_library)"
+    mode: "library"
+    variable: "ONNXRUNTIME_LIBRARY"
+    description: "Path to a library."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: true
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "onnxruntime"
+    candidate_directories:
+      - "/lib/"
+      - "/home/billy/X/SentriX/proxy-core/third_party/onnxruntime/lib/"
+      - "/usr/lib/"
+      - "/usr/local/lib/"
+      - "/home/billy/.local/share/mise/installs/node/25.2.1/bin/"
+      - "/home/billy/.local/share/mise/installs/python/3.14.2/bin/"
+      - "/home/billy/.local/share/omarchy/bin/"
+      - "/home/billy/.config/Code/User/globalStorage/github.copilot-chat/debugCommand/"
+      - "/home/billy/.config/Code/User/globalStorage/github.copilot-chat/copilotCli/"
+      - "/home/billy/.local/share/mise/shims/"
+      - "/home/billy/.local/bin/"
+      - "/usr/local/sbin/"
+      - "/usr/local/bin/"
+      - "/usr/bin/"
+      - "/usr/lib/jvm/default/bin/"
+      - "/usr/bin/site_perl/"
+      - "/usr/bin/vendor_perl/"
+      - "/usr/bin/core_perl/"
+      - "/home/billy/.vscode/extensions/ms-python.debugpy-2025.18.0-linux-x64/bundled/scripts/noConfigScripts/"
+      - "/usr/local/lib/"
+      - "/usr/local/"
+      - "/usr/lib/"
+      - "/usr/"
+      - "/lib/"
+      - "/usr/X11R6/lib/"
+      - "/usr/X11R6/"
+      - "/usr/pkg/lib/"
+      - "/usr/pkg/"
+      - "/opt/lib/"
+      - "/opt/"
+      - "/usr/lib/X11/"
+    searched_directories:
+      - "/lib/"
+    found: "/home/billy/X/SentriX/proxy-core/third_party/onnxruntime/lib/libonnxruntime.so"
+    search_context:
+      ENV{PATH}:
+        - "/home/billy/.local/share/mise/installs/node/25.2.1/bin"
+        - "/home/billy/.local/share/mise/installs/python/3.14.2/bin"
+        - "/home/billy/.local/share/omarchy/bin"
+        - "/home/billy/.config/Code/User/globalStorage/github.copilot-chat/debugCommand"
+        - "/home/billy/.config/Code/User/globalStorage/github.copilot-chat/copilotCli"
+        - "/home/billy/.local/share/mise/shims"
+        - "/home/billy/.local/share/omarchy/bin"
+        - "/home/billy/.local/share/../bin"
+        - "/usr/local/sbin"
+        - "/usr/local/bin"
+        - "/usr/bin"
+        - "/usr/lib/jvm/default/bin"
+        - "/usr/bin/site_perl"
+        - "/usr/bin/vendor_perl"
+        - "/usr/bin/core_perl"
+        - "/home/billy/.vscode/extensions/ms-python.debugpy-2025.18.0-linux-x64/bundled/scripts/noConfigScripts"
+        - "/home/billy/.local/bin"
+      CMAKE_INSTALL_PREFIX: "/usr/local"
+      CMAKE_SYSTEM_PREFIX_PATH:
+        - "/usr/local"
+        - "/usr"
+        - "/"
+        - "/usr"
+        - "/usr/local"
+        - "/usr/X11R6"
+        - "/usr/pkg"
+        - "/opt"
+      CMAKE_SYSTEM_LIBRARY_PATH:
+        - "/usr/lib/X11"
+...
