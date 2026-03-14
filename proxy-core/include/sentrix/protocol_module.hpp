@@ -20,6 +20,7 @@ struct ProtocolEvent {
 
 struct RawFeatureVector {
     std::vector<float> values;
+    std::string source_id;
     std::string direction;
     std::string event_type;
     std::string detail;

@@ -86,6 +86,36 @@ bool readMqttUtf8(const std::uint8_t* data, std::size_t len, std::size_t& offset
     return true;
 }
 
+bool mqttParseConnectMeta(
+    const std::uint8_t* data,
+    std::size_t len,
+    std::string& client_id,
+    bool& will_flag,
+    std::uint16_t& keepalive_seconds) {
+    std::size_t remaining_length = 0;
+    std::size_t bytes_used = 0;
+    if (!decodeRemainingLength(data, len, remaining_length, bytes_used)) {
+        return false;
+    }
+
+    std::size_t offset = 1 + bytes_used;
+    std::string protocol_name;
+    if (!readMqttUtf8(data, len, offset, protocol_name)) {
+        return false;
+    }
+
+    if (offset + 4 > len) {
+        return false;
+    }
+
+    const std::uint8_t connect_flags = data[offset + 1];
+    keepalive_seconds = static_cast<std::uint16_t>((static_cast<std::uint16_t>(data[offset + 2]) << 8) | data[offset + 3]);
+    will_flag = (connect_flags & 0x04U) != 0;
+    offset += 4;
+
+    return readMqttUtf8(data, len, offset, client_id);
+}
+
 std::string mqttPacketName(std::uint8_t packet_type) {
     switch (packet_type) {
         case 1:
@@ -119,32 +149,6 @@ std::string mqttPacketName(std::uint8_t packet_type) {
         default:
             return "unknown";
     }
-}
-
-std::string mqttConnectClientId(const std::uint8_t* data, std::size_t len) {
-    std::size_t remaining_length = 0;
-    std::size_t bytes_used = 0;
-    if (!decodeRemainingLength(data, len, remaining_length, bytes_used)) {
-        return {};
-    }
-
-    std::size_t offset = 1 + bytes_used;
-    std::string protocol_name;
-    if (!readMqttUtf8(data, len, offset, protocol_name)) {
-        return {};
-    }
-
-    if (offset + 4 > len) {
-        return {};
-    }
-
-    offset += 4;  // protocol level, connect flags, keepalive
-    std::string client_id;
-    if (!readMqttUtf8(data, len, offset, client_id)) {
-        return {};
-    }
-
-    return client_id;
 }
 
 std::string mqttPublishTopic(const std::uint8_t* data, std::size_t len) {
@@ -314,13 +318,25 @@ ProtocolEvent MqttModule::parse(const std::uint8_t* data, std::size_t len) {
 
     if (packet_type == 1) {
         event.event_type = "connection_open";
-        const std::string client_id = mqttConnectClientId(data, len);
-        if (!client_id.empty()) {
+        std::string client_id;
+        bool will_flag = false;
+        std::uint16_t keepalive_seconds = 0;
+        if (mqttParseConnectMeta(data, len, client_id, will_flag, keepalive_seconds) && !client_id.empty()) {
             event.source_id = client_id;
             detail << "|client_id:" << client_id;
         }
+        if (will_flag) {
+            detail << "|will";
+        }
+        detail << "|keepalive:" << keepalive_seconds;
     } else if (packet_type == 3) {
+        const std::uint8_t qos = static_cast<std::uint8_t>((data[0] >> 1) & 0x03);
+        const bool retain = (data[0] & 0x01U) != 0;
         const std::string topic = mqttPublishTopic(data, len);
+        detail << "|qos:" << static_cast<unsigned int>(qos);
+        if (retain) {
+            detail << "|retain";
+        }
         if (!topic.empty()) {
             detail << "|topic:" << topic;
         }

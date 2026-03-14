@@ -130,10 +130,21 @@ CoapMetadata parseCoapMetadata(const std::uint8_t* data, std::size_t len, const 
         return meta;
     }
 
+    if (token_length > 0) {
+        std::ostringstream token;
+        token << std::hex;
+        for (std::size_t i = 0; i < token_length; ++i) {
+            token << static_cast<unsigned int>(data[4 + i]);
+        }
+        detail << "|token:" << token.str();
+    }
+
     std::size_t offset = 4 + token_length;
     std::uint32_t option_number = 0;
     std::string uri_path;
     bool observe = false;
+    bool blockwise = false;
+    std::size_t option_count = 0;
 
     while (offset < len) {
         if (data[offset] == 0xFF) {
@@ -155,6 +166,7 @@ CoapMetadata parseCoapMetadata(const std::uint8_t* data, std::size_t len, const 
         }
 
         option_number += delta;
+        ++option_count;
         if (offset + value_length > len) {
             meta.malformed = true;
             detail << "|malform";
@@ -164,6 +176,8 @@ CoapMetadata parseCoapMetadata(const std::uint8_t* data, std::size_t len, const 
 
         if (option_number == 6) {
             observe = true;
+        } else if (option_number == 23 || option_number == 27) {
+            blockwise = true;
         } else if (option_number == 11) {
             if (!uri_path.empty()) {
                 uri_path += '/';
@@ -183,6 +197,10 @@ CoapMetadata parseCoapMetadata(const std::uint8_t* data, std::size_t len, const 
     if (observe) {
         detail << "|observe";
     }
+    if (blockwise) {
+        detail << "|blockwise";
+    }
+    detail << "|optcount:" << option_count;
 
     meta.detail = detail.str();
     return meta;

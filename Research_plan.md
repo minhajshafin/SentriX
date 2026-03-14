@@ -896,8 +896,17 @@ PYTHONWARNINGS=ignore OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
   - Observe and discovery-path detection
   - malformed option/header marking
 - ✅ Runtime event logs and detection inputs now use parsed protocol semantics instead of generic route-only detail strings
+- ✅ Added opt-in stateful behavioral feature mode via `SENTRIX_ENABLE_BEHAVIORAL_WINDOWS=1`
+- ✅ Added per-source runtime windows/counters for:
+  - 1s message-rate tracking
+  - 10s unique-resource and error-rate tracking
+  - 30s reconnection/subscription-breadth tracking
+  - message-size variance and CoAP type distribution tracking
+- ✅ Stateful mode now computes richer live values for multiple normalized/auxiliary dimensions while preserving the same 33-feature schema
 
-**Current status:** protocol modules now run parse -> feature extraction -> normalization -> rule/inference -> mitigation decision inline before forwarding, using the same simplified event-to-feature mapping as the Python dataset exporter. ONNX-backed inference is available when `SENTRIX_ONNX_MODEL_PATH` is set.
+**Current status:** protocol modules now run parse -> feature extraction -> normalization -> rule/inference -> mitigation decision inline before forwarding. Two feature modes now exist:
+- default: exporter-compatible legacy mapping (best match to the currently trained ONNX model)
+- opt-in: stateful behavioral-window mapping enabled with `SENTRIX_ENABLE_BEHAVIORAL_WINDOWS=1` for richer live features and side-by-side evaluation
 
 ## Week 9
 
