@@ -4,6 +4,7 @@ sentrix_proxy: \
   /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o \
   CMakeFiles/sentrix_proxy.dir/src/common/detection_pipeline.cpp.o \
   CMakeFiles/sentrix_proxy.dir/src/common/event_log.cpp.o \
+  CMakeFiles/sentrix_proxy.dir/src/common/feature_mapping.cpp.o \
   CMakeFiles/sentrix_proxy.dir/src/common/main.cpp.o \
   CMakeFiles/sentrix_proxy.dir/src/common/metrics_store.cpp.o \
   CMakeFiles/sentrix_proxy.dir/src/common/proxy_core.cpp.o \
@@ -50,6 +51,8 @@ sentrix_proxy: \
 CMakeFiles/sentrix_proxy.dir/src/common/detection_pipeline.cpp.o:
 
 CMakeFiles/sentrix_proxy.dir/src/common/event_log.cpp.o:
+
+CMakeFiles/sentrix_proxy.dir/src/common/feature_mapping.cpp.o:
 
 CMakeFiles/sentrix_proxy.dir/src/common/main.cpp.o:
 

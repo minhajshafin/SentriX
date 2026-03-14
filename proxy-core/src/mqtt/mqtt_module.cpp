@@ -14,6 +14,7 @@
 #include "sentrix/mqtt_module.hpp"
 #include "sentrix/detection_pipeline.hpp"
 #include "sentrix/event_log.hpp"
+#include "sentrix/feature_mapping.hpp"
 #include "sentrix/metrics_store.hpp"
 
 namespace sentrix {
@@ -136,30 +137,19 @@ ProtocolEvent MqttModule::parse(const std::uint8_t* data, std::size_t len) {
     ProtocolEvent event{};
     event.protocol = ProtocolKind::Mqtt;
     event.source_id = "mqtt-client";
+    event.direction = "incoming";
+    event.event_type = "traffic";
+    event.detail = "client_to_broker";
     event.payload.assign(data, data + len);
     return event;
 }
 
 RawFeatureVector MqttModule::extractFeatures(const ProtocolEvent& event) {
-    RawFeatureVector features{};
-    features.values = {
-        static_cast<float>(event.payload.size()),
-        static_cast<float>(event.source_id.size()),
-    };
-    return features;
+    return featuremap::extractRawFeatures(event);
 }
 
 NormalizedFeatureVector MqttModule::normalize(const RawFeatureVector& raw) {
-    NormalizedFeatureVector normalized{};
-    normalized.fill(0.0F);
-
-    if (!raw.values.empty()) {
-        normalized[2] = std::min(raw.values[0] / 1024.0F, 1.0F);
-    }
-
-    normalized[15] = 1.0F;
-    normalized[16] = 0.0F;
-    return normalized;
+    return featuremap::normalizeFeatures(raw, ProtocolKind::Mqtt);
 }
 
 void MqttModule::mitigate(const MitigationDecision& decision) {
@@ -231,7 +221,10 @@ void MqttModule::handleClient(int client_fd) {
                 break;
             }
 
-            const ProtocolEvent event = parse(buffer.data(), static_cast<std::size_t>(received));
+            ProtocolEvent event = parse(buffer.data(), static_cast<std::size_t>(received));
+            event.direction = "incoming";
+            event.event_type = "traffic";
+            event.detail = "client_to_broker";
             const RawFeatureVector raw = extractFeatures(event);
             const NormalizedFeatureVector normalized = normalize(raw);
             const detection::DetectionResult detection_result =

@@ -201,6 +201,30 @@ src/common/event_log.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sentrix_proxy.dir/build.make CMakeFiles/sentrix_proxy.dir/src/common/event_log.cpp.s
 .PHONY : src/common/event_log.cpp.s
 
+src/common/feature_mapping.o: src/common/feature_mapping.cpp.o
+.PHONY : src/common/feature_mapping.o
+
+# target to build an object file
+src/common/feature_mapping.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sentrix_proxy.dir/build.make CMakeFiles/sentrix_proxy.dir/src/common/feature_mapping.cpp.o
+.PHONY : src/common/feature_mapping.cpp.o
+
+src/common/feature_mapping.i: src/common/feature_mapping.cpp.i
+.PHONY : src/common/feature_mapping.i
+
+# target to preprocess a source file
+src/common/feature_mapping.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sentrix_proxy.dir/build.make CMakeFiles/sentrix_proxy.dir/src/common/feature_mapping.cpp.i
+.PHONY : src/common/feature_mapping.cpp.i
+
+src/common/feature_mapping.s: src/common/feature_mapping.cpp.s
+.PHONY : src/common/feature_mapping.s
+
+# target to generate assembly for a file
+src/common/feature_mapping.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sentrix_proxy.dir/build.make CMakeFiles/sentrix_proxy.dir/src/common/feature_mapping.cpp.s
+.PHONY : src/common/feature_mapping.cpp.s
+
 src/common/main.o: src/common/main.cpp.o
 .PHONY : src/common/main.o
 
@@ -315,6 +339,9 @@ help:
 	@echo "... src/common/event_log.o"
 	@echo "... src/common/event_log.i"
 	@echo "... src/common/event_log.s"
+	@echo "... src/common/feature_mapping.o"
+	@echo "... src/common/feature_mapping.i"
+	@echo "... src/common/feature_mapping.s"
 	@echo "... src/common/main.o"
 	@echo "... src/common/main.i"
 	@echo "... src/common/main.s"

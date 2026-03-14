@@ -882,8 +882,10 @@ PYTHONWARNINGS=ignore OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
 - ✅ ONNX-enabled native build now working via local SDK at `proxy-core/third_party/onnxruntime`
 - ✅ ONNX model artifact generated: `ml-pipeline/models/lightgbm_full.onnx` (1.2 MB)
 - ✅ ONNX-vs-pickle prediction agreement validated: 1.0 (`ml-pipeline/reports/week6_onnx_validation.json`)
+- ✅ Replaced placeholder runtime feature extraction with the actual Python training/export mapping used for `f00..f32`
+- ✅ Added shared C++ feature mapper: `proxy-core/src/common/feature_mapping.cpp`
 
-**Current status:** protocol modules now run parse -> feature extraction -> normalization -> rule/inference -> mitigation decision inline before forwarding, and ONNX-backed inference is now available when `SENTRIX_ONNX_MODEL_PATH` is set.
+**Current status:** protocol modules now run parse -> feature extraction -> normalization -> rule/inference -> mitigation decision inline before forwarding, using the same simplified event-to-feature mapping as the Python dataset exporter. ONNX-backed inference is available when `SENTRIX_ONNX_MODEL_PATH` is set.
 
 ## Week 9
 

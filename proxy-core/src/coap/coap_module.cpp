@@ -15,6 +15,7 @@
 #include "sentrix/coap_module.hpp"
 #include "sentrix/detection_pipeline.hpp"
 #include "sentrix/event_log.hpp"
+#include "sentrix/feature_mapping.hpp"
 #include "sentrix/metrics_store.hpp"
 
 namespace sentrix {
@@ -103,30 +104,19 @@ ProtocolEvent CoapModule::parse(const std::uint8_t* data, std::size_t len) {
     ProtocolEvent event{};
     event.protocol = ProtocolKind::Coap;
     event.source_id = "coap-source";
+    event.direction = "incoming";
+    event.event_type = "traffic";
+    event.detail = "client_to_backend";
     event.payload.assign(data, data + len);
     return event;
 }
 
 RawFeatureVector CoapModule::extractFeatures(const ProtocolEvent& event) {
-    RawFeatureVector features{};
-    features.values = {
-        static_cast<float>(event.payload.size()),
-        static_cast<float>(event.source_id.size()),
-    };
-    return features;
+    return featuremap::extractRawFeatures(event);
 }
 
 NormalizedFeatureVector CoapModule::normalize(const RawFeatureVector& raw) {
-    NormalizedFeatureVector normalized{};
-    normalized.fill(0.0F);
-
-    if (!raw.values.empty()) {
-        normalized[2] = std::min(raw.values[0] / 1024.0F, 1.0F);
-    }
-
-    normalized[15] = 0.0F;
-    normalized[16] = 1.0F;
-    return normalized;
+    return featuremap::normalizeFeatures(raw, ProtocolKind::Coap);
 }
 
 void CoapModule::mitigate(const MitigationDecision& decision) {
@@ -168,7 +158,10 @@ void CoapModule::ioLoop() {
                 &client_len);
 
             if (received > 0) {
-                const ProtocolEvent event = parse(buffer.data(), static_cast<std::size_t>(received));
+                ProtocolEvent event = parse(buffer.data(), static_cast<std::size_t>(received));
+                event.direction = "incoming";
+                event.event_type = "traffic";
+                event.detail = "client_to_backend";
                 const RawFeatureVector raw = extractFeatures(event);
                 const NormalizedFeatureVector normalized = normalize(raw);
                 const detection::DetectionResult detection_result =

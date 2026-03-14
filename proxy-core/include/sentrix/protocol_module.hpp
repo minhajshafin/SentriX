@@ -13,10 +13,16 @@ struct ProtocolEvent {
     ProtocolKind protocol;
     std::vector<std::uint8_t> payload;
     std::string source_id;
+    std::string direction;
+    std::string event_type;
+    std::string detail;
 };
 
 struct RawFeatureVector {
     std::vector<float> values;
+    std::string direction;
+    std::string event_type;
+    std::string detail;
 };
 
 struct MitigationDecision {

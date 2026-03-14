@@ -100,10 +100,24 @@ CMakeFiles/sentrix_proxy.dir/src/common/event_log.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/sentrix_proxy.dir/src/common/event_log.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/billy/X/SentriX/proxy-core/src/common/event_log.cpp -o CMakeFiles/sentrix_proxy.dir/src/common/event_log.cpp.s
 
+CMakeFiles/sentrix_proxy.dir/src/common/feature_mapping.cpp.o: CMakeFiles/sentrix_proxy.dir/flags.make
+CMakeFiles/sentrix_proxy.dir/src/common/feature_mapping.cpp.o: /home/billy/X/SentriX/proxy-core/src/common/feature_mapping.cpp
+CMakeFiles/sentrix_proxy.dir/src/common/feature_mapping.cpp.o: CMakeFiles/sentrix_proxy.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/billy/X/SentriX/proxy-core/build-onnx/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/sentrix_proxy.dir/src/common/feature_mapping.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/sentrix_proxy.dir/src/common/feature_mapping.cpp.o -MF CMakeFiles/sentrix_proxy.dir/src/common/feature_mapping.cpp.o.d -o CMakeFiles/sentrix_proxy.dir/src/common/feature_mapping.cpp.o -c /home/billy/X/SentriX/proxy-core/src/common/feature_mapping.cpp
+
+CMakeFiles/sentrix_proxy.dir/src/common/feature_mapping.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/sentrix_proxy.dir/src/common/feature_mapping.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/billy/X/SentriX/proxy-core/src/common/feature_mapping.cpp > CMakeFiles/sentrix_proxy.dir/src/common/feature_mapping.cpp.i
+
+CMakeFiles/sentrix_proxy.dir/src/common/feature_mapping.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/sentrix_proxy.dir/src/common/feature_mapping.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/billy/X/SentriX/proxy-core/src/common/feature_mapping.cpp -o CMakeFiles/sentrix_proxy.dir/src/common/feature_mapping.cpp.s
+
 CMakeFiles/sentrix_proxy.dir/src/common/main.cpp.o: CMakeFiles/sentrix_proxy.dir/flags.make
 CMakeFiles/sentrix_proxy.dir/src/common/main.cpp.o: /home/billy/X/SentriX/proxy-core/src/common/main.cpp
 CMakeFiles/sentrix_proxy.dir/src/common/main.cpp.o: CMakeFiles/sentrix_proxy.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/billy/X/SentriX/proxy-core/build-onnx/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/sentrix_proxy.dir/src/common/main.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/billy/X/SentriX/proxy-core/build-onnx/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/sentrix_proxy.dir/src/common/main.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/sentrix_proxy.dir/src/common/main.cpp.o -MF CMakeFiles/sentrix_proxy.dir/src/common/main.cpp.o.d -o CMakeFiles/sentrix_proxy.dir/src/common/main.cpp.o -c /home/billy/X/SentriX/proxy-core/src/common/main.cpp
 
 CMakeFiles/sentrix_proxy.dir/src/common/main.cpp.i: cmake_force
@@ -117,7 +131,7 @@ CMakeFiles/sentrix_proxy.dir/src/common/main.cpp.s: cmake_force
 CMakeFiles/sentrix_proxy.dir/src/common/metrics_store.cpp.o: CMakeFiles/sentrix_proxy.dir/flags.make
 CMakeFiles/sentrix_proxy.dir/src/common/metrics_store.cpp.o: /home/billy/X/SentriX/proxy-core/src/common/metrics_store.cpp
 CMakeFiles/sentrix_proxy.dir/src/common/metrics_store.cpp.o: CMakeFiles/sentrix_proxy.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/billy/X/SentriX/proxy-core/build-onnx/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/sentrix_proxy.dir/src/common/metrics_store.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/billy/X/SentriX/proxy-core/build-onnx/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/sentrix_proxy.dir/src/common/metrics_store.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/sentrix_proxy.dir/src/common/metrics_store.cpp.o -MF CMakeFiles/sentrix_proxy.dir/src/common/metrics_store.cpp.o.d -o CMakeFiles/sentrix_proxy.dir/src/common/metrics_store.cpp.o -c /home/billy/X/SentriX/proxy-core/src/common/metrics_store.cpp
 
 CMakeFiles/sentrix_proxy.dir/src/common/metrics_store.cpp.i: cmake_force
@@ -131,7 +145,7 @@ CMakeFiles/sentrix_proxy.dir/src/common/metrics_store.cpp.s: cmake_force
 CMakeFiles/sentrix_proxy.dir/src/common/proxy_core.cpp.o: CMakeFiles/sentrix_proxy.dir/flags.make
 CMakeFiles/sentrix_proxy.dir/src/common/proxy_core.cpp.o: /home/billy/X/SentriX/proxy-core/src/common/proxy_core.cpp
 CMakeFiles/sentrix_proxy.dir/src/common/proxy_core.cpp.o: CMakeFiles/sentrix_proxy.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/billy/X/SentriX/proxy-core/build-onnx/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/sentrix_proxy.dir/src/common/proxy_core.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/billy/X/SentriX/proxy-core/build-onnx/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/sentrix_proxy.dir/src/common/proxy_core.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/sentrix_proxy.dir/src/common/proxy_core.cpp.o -MF CMakeFiles/sentrix_proxy.dir/src/common/proxy_core.cpp.o.d -o CMakeFiles/sentrix_proxy.dir/src/common/proxy_core.cpp.o -c /home/billy/X/SentriX/proxy-core/src/common/proxy_core.cpp
 
 CMakeFiles/sentrix_proxy.dir/src/common/proxy_core.cpp.i: cmake_force
@@ -145,7 +159,7 @@ CMakeFiles/sentrix_proxy.dir/src/common/proxy_core.cpp.s: cmake_force
 CMakeFiles/sentrix_proxy.dir/src/mqtt/mqtt_module.cpp.o: CMakeFiles/sentrix_proxy.dir/flags.make
 CMakeFiles/sentrix_proxy.dir/src/mqtt/mqtt_module.cpp.o: /home/billy/X/SentriX/proxy-core/src/mqtt/mqtt_module.cpp
 CMakeFiles/sentrix_proxy.dir/src/mqtt/mqtt_module.cpp.o: CMakeFiles/sentrix_proxy.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/billy/X/SentriX/proxy-core/build-onnx/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/sentrix_proxy.dir/src/mqtt/mqtt_module.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/billy/X/SentriX/proxy-core/build-onnx/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/sentrix_proxy.dir/src/mqtt/mqtt_module.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/sentrix_proxy.dir/src/mqtt/mqtt_module.cpp.o -MF CMakeFiles/sentrix_proxy.dir/src/mqtt/mqtt_module.cpp.o.d -o CMakeFiles/sentrix_proxy.dir/src/mqtt/mqtt_module.cpp.o -c /home/billy/X/SentriX/proxy-core/src/mqtt/mqtt_module.cpp
 
 CMakeFiles/sentrix_proxy.dir/src/mqtt/mqtt_module.cpp.i: cmake_force
@@ -159,7 +173,7 @@ CMakeFiles/sentrix_proxy.dir/src/mqtt/mqtt_module.cpp.s: cmake_force
 CMakeFiles/sentrix_proxy.dir/src/coap/coap_module.cpp.o: CMakeFiles/sentrix_proxy.dir/flags.make
 CMakeFiles/sentrix_proxy.dir/src/coap/coap_module.cpp.o: /home/billy/X/SentriX/proxy-core/src/coap/coap_module.cpp
 CMakeFiles/sentrix_proxy.dir/src/coap/coap_module.cpp.o: CMakeFiles/sentrix_proxy.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/billy/X/SentriX/proxy-core/build-onnx/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/sentrix_proxy.dir/src/coap/coap_module.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/billy/X/SentriX/proxy-core/build-onnx/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/sentrix_proxy.dir/src/coap/coap_module.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/sentrix_proxy.dir/src/coap/coap_module.cpp.o -MF CMakeFiles/sentrix_proxy.dir/src/coap/coap_module.cpp.o.d -o CMakeFiles/sentrix_proxy.dir/src/coap/coap_module.cpp.o -c /home/billy/X/SentriX/proxy-core/src/coap/coap_module.cpp
 
 CMakeFiles/sentrix_proxy.dir/src/coap/coap_module.cpp.i: cmake_force
@@ -174,6 +188,7 @@ CMakeFiles/sentrix_proxy.dir/src/coap/coap_module.cpp.s: cmake_force
 sentrix_proxy_OBJECTS = \
 "CMakeFiles/sentrix_proxy.dir/src/common/detection_pipeline.cpp.o" \
 "CMakeFiles/sentrix_proxy.dir/src/common/event_log.cpp.o" \
+"CMakeFiles/sentrix_proxy.dir/src/common/feature_mapping.cpp.o" \
 "CMakeFiles/sentrix_proxy.dir/src/common/main.cpp.o" \
 "CMakeFiles/sentrix_proxy.dir/src/common/metrics_store.cpp.o" \
 "CMakeFiles/sentrix_proxy.dir/src/common/proxy_core.cpp.o" \
@@ -185,6 +200,7 @@ sentrix_proxy_EXTERNAL_OBJECTS =
 
 sentrix_proxy: CMakeFiles/sentrix_proxy.dir/src/common/detection_pipeline.cpp.o
 sentrix_proxy: CMakeFiles/sentrix_proxy.dir/src/common/event_log.cpp.o
+sentrix_proxy: CMakeFiles/sentrix_proxy.dir/src/common/feature_mapping.cpp.o
 sentrix_proxy: CMakeFiles/sentrix_proxy.dir/src/common/main.cpp.o
 sentrix_proxy: CMakeFiles/sentrix_proxy.dir/src/common/metrics_store.cpp.o
 sentrix_proxy: CMakeFiles/sentrix_proxy.dir/src/common/proxy_core.cpp.o
@@ -194,7 +210,7 @@ sentrix_proxy: CMakeFiles/sentrix_proxy.dir/build.make
 sentrix_proxy: CMakeFiles/sentrix_proxy.dir/compiler_depend.ts
 sentrix_proxy: /home/billy/X/SentriX/proxy-core/third_party/onnxruntime/lib/libonnxruntime.so
 sentrix_proxy: CMakeFiles/sentrix_proxy.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/billy/X/SentriX/proxy-core/build-onnx/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Linking CXX executable sentrix_proxy"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/billy/X/SentriX/proxy-core/build-onnx/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Linking CXX executable sentrix_proxy"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/sentrix_proxy.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
