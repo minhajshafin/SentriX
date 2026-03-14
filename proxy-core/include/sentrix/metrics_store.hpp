@@ -7,6 +7,7 @@ namespace sentrix::metrics {
 
 void addMqttMessages(std::size_t count);
 void addCoapMessages(std::size_t count);
+void addDetections(std::size_t count);
 void setDetections(std::size_t count);
 void setLatencyP95Ms(std::size_t value);
 

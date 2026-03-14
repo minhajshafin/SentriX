@@ -23,6 +23,10 @@ void addCoapMessages(std::size_t count) {
     g_coap_messages.fetch_add(count, std::memory_order_relaxed);
 }
 
+void addDetections(std::size_t count) {
+    g_detections.fetch_add(count, std::memory_order_relaxed);
+}
+
 void setDetections(std::size_t count) {
     g_detections.store(count, std::memory_order_relaxed);
 }
