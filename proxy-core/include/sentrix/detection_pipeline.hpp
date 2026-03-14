@@ -1,6 +1,8 @@
 #pragma once
 
+#include <atomic>
 #include <string>
+#include <vector>
 
 #include "sentrix/feature_vector.hpp"
 #include "sentrix/protocol_module.hpp"
@@ -30,7 +32,16 @@ public:
 
 class InferenceEngine {
 public:
+    InferenceEngine();
+
     InferenceResult infer(const NormalizedFeatureVector& features, ProtocolKind protocol) const;
+    bool usingOnnx() const;
+
+private:
+    float fallbackScore(const NormalizedFeatureVector& features, ProtocolKind protocol) const;
+    float inferWithOnnx(const NormalizedFeatureVector& features) const;
+
+    std::atomic<bool> onnx_ready_{false};
 };
 
 class MitigationEngine {
