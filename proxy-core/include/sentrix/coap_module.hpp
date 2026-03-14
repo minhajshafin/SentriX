@@ -49,6 +49,7 @@ private:
     std::string backend_host_ = "californium-backend";
     int backend_port_ = 5683;
     std::string events_path_;
+    std::string feature_debug_path_;
 
     std::mutex map_mutex_;
     std::unordered_map<std::uint16_t, ClientEndpoint> mid_to_client_;

@@ -8,6 +8,7 @@
 #include <iostream>
 #include <memory>
 #include <mutex>
+#include <sstream>
 #include <vector>
 
 #ifdef SENTRIX_ENABLE_ONNX_RUNTIME
@@ -21,11 +22,43 @@ namespace {
 constexpr std::size_t kMsgRateIndex = 0;
 constexpr std::size_t kPayloadSizeIndex = 2;
 
-constexpr float kMsgRateRuleThreshold = 0.95F;
-constexpr float kPayloadSizeRuleThreshold = 0.97F;
-constexpr float kInferenceDropThreshold = 0.90F;
-constexpr float kInferenceRateLimitThreshold = 0.75F;
 constexpr char kOnnxModelPathEnv[] = "SENTRIX_ONNX_MODEL_PATH";
+constexpr char kMsgRateRuleThresholdEnv[] = "SENTRIX_RULE_MSG_RATE_THRESHOLD";
+constexpr char kPayloadSizeRuleThresholdEnv[] = "SENTRIX_RULE_PAYLOAD_THRESHOLD";
+constexpr char kInferenceDropThresholdEnv[] = "SENTRIX_INFERENCE_DROP_THRESHOLD";
+constexpr char kInferenceRateLimitThresholdEnv[] = "SENTRIX_INFERENCE_RATE_LIMIT_THRESHOLD";
+
+struct DetectionConfig {
+    float msg_rate_rule_threshold = 0.95F;
+    float payload_size_rule_threshold = 0.97F;
+    float inference_drop_threshold = 0.90F;
+    float inference_rate_limit_threshold = 0.75F;
+};
+
+float envToUnitFloat(const char* env_name, float fallback) {
+    const char* raw = std::getenv(env_name);
+    if (raw == nullptr || *raw == '\0') {
+        return fallback;
+    }
+
+    char* end = nullptr;
+    const float parsed = std::strtof(raw, &end);
+    if (end == raw || *end != '\0' || !std::isfinite(parsed) || parsed < 0.0F || parsed > 1.0F) {
+        return fallback;
+    }
+
+    return parsed;
+}
+
+const DetectionConfig& detectionConfig() {
+    static const DetectionConfig config{
+        envToUnitFloat(kMsgRateRuleThresholdEnv, 0.95F),
+        envToUnitFloat(kPayloadSizeRuleThresholdEnv, 0.97F),
+        envToUnitFloat(kInferenceDropThresholdEnv, 0.90F),
+        envToUnitFloat(kInferenceRateLimitThresholdEnv, 0.75F),
+    };
+    return config;
+}
 
 #ifdef SENTRIX_ENABLE_ONNX_RUNTIME
 struct OnnxRuntimeState {
@@ -134,17 +167,18 @@ float scoreFromTensorOutput(const Ort::Value& output) {
 
 RuleResult RuleEngine::evaluate(const NormalizedFeatureVector& features) const {
     RuleResult result{};
+    const auto& config = detectionConfig();
 
     const float msg_rate = features[kMsgRateIndex];
     const float payload_size = features[kPayloadSizeIndex];
 
-    if (msg_rate >= kMsgRateRuleThreshold) {
+    if (msg_rate >= config.msg_rate_rule_threshold) {
         result.triggered = true;
         result.reason = "rule:msg_rate_exceeded";
         return result;
     }
 
-    if (payload_size >= kPayloadSizeRuleThreshold) {
+    if (payload_size >= config.payload_size_rule_threshold) {
         result.triggered = true;
         result.reason = "rule:oversized_payload";
     }
@@ -241,6 +275,7 @@ float InferenceEngine::inferWithOnnx(const NormalizedFeatureVector& features) co
 }
 
 MitigationDecision MitigationEngine::decide(const RuleResult& rule, const InferenceResult& inference) const {
+    const auto& config = detectionConfig();
     MitigationDecision decision{};
     decision.allow = true;
     decision.action = "forward";
@@ -252,14 +287,14 @@ MitigationDecision MitigationEngine::decide(const RuleResult& rule, const Infere
         return decision;
     }
 
-    if (inference.anomaly_score >= kInferenceDropThreshold) {
+    if (inference.anomaly_score >= config.inference_drop_threshold) {
         decision.allow = false;
         decision.action = "drop";
         decision.reason = "inference:high_anomaly_score";
         return decision;
     }
 
-    if (inference.anomaly_score >= kInferenceRateLimitThreshold) {
+    if (inference.anomaly_score >= config.inference_rate_limit_threshold) {
         decision.allow = true;
         decision.action = "rate_limit";
         decision.reason = "inference:elevated_anomaly_score";
@@ -283,6 +318,17 @@ DetectionResult evaluate(const NormalizedFeatureVector& features, ProtocolKind p
 bool isOnnxRuntimeActive() {
     static const InferenceEngine inference_engine;
     return inference_engine.usingOnnx();
+}
+
+std::string runtimeSummary() {
+    const auto& config = detectionConfig();
+    std::ostringstream out;
+    out << "onnx=" << (isOnnxRuntimeActive() ? "yes" : "no")
+        << " rule_msg_rate=" << config.msg_rate_rule_threshold
+        << " rule_payload=" << config.payload_size_rule_threshold
+        << " infer_rate_limit=" << config.inference_rate_limit_threshold
+        << " infer_drop=" << config.inference_drop_threshold;
+    return out.str();
 }
 
 }  // namespace sentrix::detection

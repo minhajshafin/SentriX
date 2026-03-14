@@ -51,5 +51,6 @@ public:
 
 DetectionResult evaluate(const NormalizedFeatureVector& features, ProtocolKind protocol);
 bool isOnnxRuntimeActive();
+std::string runtimeSummary();
 
 }  // namespace sentrix::detection

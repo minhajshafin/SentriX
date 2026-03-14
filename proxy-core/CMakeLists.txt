@@ -10,6 +10,7 @@ option(SENTRIX_ENABLE_ONNX_RUNTIME "Enable ONNX Runtime inference in detection p
 add_executable(sentrix_proxy
     src/common/detection_pipeline.cpp
     src/common/event_log.cpp
+    src/common/feature_debug.cpp
     src/common/feature_mapping.cpp
     src/common/main.cpp
     src/common/metrics_store.cpp

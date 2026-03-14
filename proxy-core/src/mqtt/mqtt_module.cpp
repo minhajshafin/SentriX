@@ -15,6 +15,7 @@
 #include "sentrix/mqtt_module.hpp"
 #include "sentrix/detection_pipeline.hpp"
 #include "sentrix/event_log.hpp"
+#include "sentrix/feature_debug.hpp"
 #include "sentrix/feature_mapping.hpp"
 #include "sentrix/metrics_store.hpp"
 
@@ -36,6 +37,13 @@ int envToInt(const char* value, int fallback) {
     }
 
     return static_cast<int>(parsed);
+}
+
+std::string envToString(const char* value, const std::string& fallback = {}) {
+    if (value == nullptr || *value == '\0') {
+        return fallback;
+    }
+    return value;
 }
 
 bool decodeRemainingLength(
@@ -211,6 +219,8 @@ MqttModule::MqttModule() {
     } else {
         events_path_ = "/tmp/sentrix_events.log";
     }
+
+    feature_debug_path_ = envToString(std::getenv("SENTRIX_FEATURE_DEBUG_PATH"));
 }
 
 MqttModule::~MqttModule() {
@@ -431,9 +441,12 @@ void MqttModule::handleClient(int client_fd) {
                 event.detail = "client_to_broker|" + event.detail;
             }
             const RawFeatureVector raw = extractFeatures(event);
-            const NormalizedFeatureVector normalized = normalize(raw);
+            const featuremap::FeatureComputation feature_set =
+                featuremap::computeFeatureVectors(raw, ProtocolKind::Mqtt);
+            const NormalizedFeatureVector& normalized = feature_set.active;
             const detection::DetectionResult detection_result =
                 detection::evaluate(normalized, ProtocolKind::Mqtt);
+            featuredebug::appendComparison(feature_debug_path_, event, raw, feature_set, detection_result);
             mitigate(detection_result.decision);
 
             if (!detection_result.decision.allow) {

@@ -33,8 +33,7 @@ int main() {
     core.registerModule(std::make_unique<sentrix::MqttModule>());
     core.registerModule(std::make_unique<sentrix::CoapModule>());
 
-    std::cout << "[Detection] ONNX runtime active: "
-              << (sentrix::detection::isOnnxRuntimeActive() ? "yes" : "no") << std::endl;
+    std::cout << "[Detection] Runtime config: " << sentrix::detection::runtimeSummary() << std::endl;
 
     core.startAll();
     std::cout << "SentriX proxy-core running (Week 7 detection scaffold mode). Press Ctrl+C to stop."

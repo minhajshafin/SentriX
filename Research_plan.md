@@ -864,11 +864,13 @@ PYTHONWARNINGS=ignore OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
 
 ## Week 7–8
 
-- Implement shared C++ proxy framework (normalization engine, ML inference, rule engine, metrics)
-- Implement MQTT protocol module (TCP listener, MQTT parser, feature extraction)
-- Implement CoAP protocol module (UDP listener, CoAP parser, feature extraction)
+### Week 7 - completed
 
-### Week 7 Progress Update (In Progress)
+- Implement shared C++ proxy framework (normalization engine, ML inference, rule engine, metrics)
+- Implement MQTT protocol module baseline (TCP listener, parser metadata extraction, runtime feature generation)
+- Implement CoAP protocol module baseline (UDP listener, parser metadata extraction, runtime feature generation)
+
+### Week 7 Completion Status (Done)
 
 - ✅ Added shared detection scaffold in `proxy-core`:
   - `RuleEngine` (Stage 1), `InferenceEngine` (Stage 2 heuristic scaffold), `MitigationEngine` (Stage 3 action decision)
@@ -903,10 +905,38 @@ PYTHONWARNINGS=ignore OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
   - 30s reconnection/subscription-breadth tracking
   - message-size variance and CoAP type distribution tracking
 - ✅ Stateful mode now computes richer live values for multiple normalized/auxiliary dimensions while preserving the same 33-feature schema
+- ✅ Added side-by-side feature debug export via `SENTRIX_FEATURE_DEBUG_PATH`
+  - emits JSONL records containing `legacy`, `behavioral`, and `active` 33-dim vectors for the same packet/event
+  - includes protocol metadata, source ID, parsed detail string, and detection outcome
+  - verified with live MQTT CONNECT traffic
+- ✅ Added checked-in smoke validation for both protocol paths
+  - script: `proxy-core/scripts/week7_smoke_validation.py`
+  - report artifact: `ml-pipeline/reports/week7_proxy_smoke_validation.json`
+  - persisted validation outputs: `ml-pipeline/reports/week7_proxy_smoke/`
 
-**Current status:** protocol modules now run parse -> feature extraction -> normalization -> rule/inference -> mitigation decision inline before forwarding. Two feature modes now exist:
+**Week 7 Result:** protocol modules now run parse -> feature extraction -> normalization -> rule/inference -> mitigation decision inline before forwarding. Two feature modes now exist:
 - default: exporter-compatible legacy mapping (best match to the currently trained ONNX model)
 - opt-in: stateful behavioral-window mapping enabled with `SENTRIX_ENABLE_BEHAVIORAL_WINDOWS=1` for richer live features and side-by-side evaluation
+
+**Week 7 closeout:**
+- Detection thresholds are now runtime-configurable through environment variables instead of being fixed in code
+- Added a checked-in smoke-validation harness that runs MQTT and CoAP through the ONNX-enabled proxy with local echo backends and verifies metrics plus feature-debug output for both paths
+- The richer behavioral feature mode has not yet been used to regenerate data or retrain the model, which remains a Week 8 decision rather than a Week 7 blocker
+
+### Week 8 - pending
+
+- End-to-end integration validation against real Mosquitto and Californium backends
+- Run controlled benign/attack traffic through the C++ proxy path
+- Measure latency, throughput, and detection behavior on the live proxy
+- Compare legacy vs behavioral feature streams using captured debug exports
+- Decide whether to retrain using richer runtime-derived features
+
+### Week 8 Status (Not Done Yet)
+
+- ⏳ Full end-to-end validation with both protocol backends is pending
+- ⏳ Quantitative proxy-path evaluation (latency / throughput / detection rate) is pending
+- ⏳ Behavioral-mode dataset regeneration and retraining decision is pending
+- ⏳ Finalize whether the runtime feature path should remain legacy-compatible or move to richer behavioral mode for the next training cycle
 
 ## Week 9
 

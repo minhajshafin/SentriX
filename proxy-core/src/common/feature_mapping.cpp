@@ -541,11 +541,17 @@ RawFeatureVector extractRawFeatures(const ProtocolEvent& event) {
     return raw;
 }
 
+FeatureComputation computeFeatureVectors(const RawFeatureVector& raw, ProtocolKind protocol) {
+    FeatureComputation out{};
+    out.behavioral_enabled = envEnabled(kBehavioralWindowsEnv);
+    out.legacy = legacyNormalize(raw, protocol);
+    out.behavioral = statefulNormalize(raw, protocol);
+    out.active = out.behavioral_enabled ? out.behavioral : out.legacy;
+    return out;
+}
+
 NormalizedFeatureVector normalizeFeatures(const RawFeatureVector& raw, ProtocolKind protocol) {
-    if (envEnabled(kBehavioralWindowsEnv)) {
-        return statefulNormalize(raw, protocol);
-    }
-    return legacyNormalize(raw, protocol);
+    return computeFeatureVectors(raw, protocol).active;
 }
 
 }  // namespace sentrix::featuremap

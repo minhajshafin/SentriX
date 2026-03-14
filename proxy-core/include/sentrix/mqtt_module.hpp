@@ -43,6 +43,7 @@ private:
     std::string broker_host_ = "mosquitto";
     int broker_port_ = 1883;
     std::string events_path_;
+    std::string feature_debug_path_;
 };
 
 }  // namespace sentrix

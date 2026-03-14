@@ -6,6 +6,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/sentrix_proxy.dir/src/common/detection_pipeline.cpp.o.d"
   "CMakeFiles/sentrix_proxy.dir/src/common/event_log.cpp.o"
   "CMakeFiles/sentrix_proxy.dir/src/common/event_log.cpp.o.d"
+  "CMakeFiles/sentrix_proxy.dir/src/common/feature_debug.cpp.o"
+  "CMakeFiles/sentrix_proxy.dir/src/common/feature_debug.cpp.o.d"
   "CMakeFiles/sentrix_proxy.dir/src/common/feature_mapping.cpp.o"
   "CMakeFiles/sentrix_proxy.dir/src/common/feature_mapping.cpp.o.d"
   "CMakeFiles/sentrix_proxy.dir/src/common/main.cpp.o"

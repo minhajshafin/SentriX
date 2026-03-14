@@ -16,6 +16,7 @@
 #include "sentrix/coap_module.hpp"
 #include "sentrix/detection_pipeline.hpp"
 #include "sentrix/event_log.hpp"
+#include "sentrix/feature_debug.hpp"
 #include "sentrix/feature_mapping.hpp"
 #include "sentrix/metrics_store.hpp"
 
@@ -37,6 +38,13 @@ int envToInt(const char* value, int fallback) {
     }
 
     return static_cast<int>(parsed);
+}
+
+std::string envToString(const char* value, const std::string& fallback = {}) {
+    if (value == nullptr || *value == '\0') {
+        return fallback;
+    }
+    return value;
 }
 
 std::string coapTypeName(std::uint8_t type) {
@@ -221,6 +229,8 @@ CoapModule::CoapModule() {
     } else {
         events_path_ = "/tmp/sentrix_events.log";
     }
+
+    feature_debug_path_ = envToString(std::getenv("SENTRIX_FEATURE_DEBUG_PATH"));
 }
 
 CoapModule::~CoapModule() {
@@ -333,9 +343,12 @@ void CoapModule::ioLoop() {
                 event.direction = "incoming";
                 event.source_id = endpointToString(client_addr) + ':' + std::to_string(ntohs(client_addr.sin_port));
                 const RawFeatureVector raw = extractFeatures(event);
-                const NormalizedFeatureVector normalized = normalize(raw);
+                const featuremap::FeatureComputation feature_set =
+                    featuremap::computeFeatureVectors(raw, ProtocolKind::Coap);
+                const NormalizedFeatureVector& normalized = feature_set.active;
                 const detection::DetectionResult detection_result =
                     detection::evaluate(normalized, ProtocolKind::Coap);
+                featuredebug::appendComparison(feature_debug_path_, event, raw, feature_set, detection_result);
                 mitigate(detection_result.decision);
 
                 if (!detection_result.decision.allow) {
