@@ -884,6 +884,18 @@ PYTHONWARNINGS=ignore OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
 - ✅ ONNX-vs-pickle prediction agreement validated: 1.0 (`ml-pipeline/reports/week6_onnx_validation.json`)
 - ✅ Replaced placeholder runtime feature extraction with the actual Python training/export mapping used for `f00..f32`
 - ✅ Added shared C++ feature mapper: `proxy-core/src/common/feature_mapping.cpp`
+- ✅ Upgraded MQTT parser metadata extraction:
+  - control packet type decoding (`CONNECT`, `PUBLISH`, `SUBSCRIBE`, etc.)
+  - wildcard subscribe detection
+  - basic client-id/topic extraction
+  - malformed frame marking
+- ✅ Upgraded CoAP parser metadata extraction:
+  - message type decoding (`CON`, `NON`, `ACK`, `RST`)
+  - method/code decoding (`GET`, `POST`, `PUT`, `DELETE`)
+  - URI-Path parsing
+  - Observe and discovery-path detection
+  - malformed option/header marking
+- ✅ Runtime event logs and detection inputs now use parsed protocol semantics instead of generic route-only detail strings
 
 **Current status:** protocol modules now run parse -> feature extraction -> normalization -> rule/inference -> mitigation decision inline before forwarding, using the same simplified event-to-feature mapping as the Python dataset exporter. ONNX-backed inference is available when `SENTRIX_ONNX_MODEL_PATH` is set.
 

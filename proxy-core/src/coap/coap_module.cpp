@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <sstream>
 
 #include <arpa/inet.h>
 #include <netdb.h>
@@ -36,6 +37,155 @@ int envToInt(const char* value, int fallback) {
     }
 
     return static_cast<int>(parsed);
+}
+
+std::string coapTypeName(std::uint8_t type) {
+    switch (type) {
+        case 0:
+            return "con";
+        case 1:
+            return "non";
+        case 2:
+            return "ack";
+        case 3:
+            return "rst";
+        default:
+            return "unknown";
+    }
+}
+
+std::string coapCodeName(std::uint8_t code) {
+    switch (code) {
+        case 1:
+            return "get";
+        case 2:
+            return "post";
+        case 3:
+            return "put";
+        case 4:
+            return "delete";
+        default:
+            return "code:" + std::to_string(static_cast<unsigned int>(code));
+    }
+}
+
+bool decodeExtendedField(
+    const std::uint8_t* data,
+    std::size_t len,
+    std::size_t& offset,
+    std::uint8_t nibble,
+    std::uint32_t& value) {
+    if (nibble <= 12) {
+        value = nibble;
+        return true;
+    }
+    if (nibble == 13) {
+        if (offset >= len) {
+            return false;
+        }
+        value = static_cast<std::uint32_t>(data[offset++]) + 13U;
+        return true;
+    }
+    if (nibble == 14) {
+        if (offset + 1 >= len) {
+            return false;
+        }
+        value = (static_cast<std::uint32_t>(data[offset]) << 8) |
+                static_cast<std::uint32_t>(data[offset + 1]);
+        value += 269U;
+        offset += 2;
+        return true;
+    }
+    return false;
+}
+
+struct CoapMetadata {
+    std::string event_type = "traffic";
+    std::string detail;
+    bool malformed = false;
+};
+
+CoapMetadata parseCoapMetadata(const std::uint8_t* data, std::size_t len, const std::string& route_prefix) {
+    CoapMetadata meta{};
+    std::ostringstream detail;
+    detail << route_prefix;
+
+    if (len < 4) {
+        meta.malformed = true;
+        detail << "|malform|short_header";
+        meta.detail = detail.str();
+        return meta;
+    }
+
+    const std::uint8_t version = static_cast<std::uint8_t>((data[0] >> 6) & 0x03);
+    const std::uint8_t type = static_cast<std::uint8_t>((data[0] >> 4) & 0x03);
+    const std::uint8_t token_length = static_cast<std::uint8_t>(data[0] & 0x0F);
+    const std::uint8_t code = data[1];
+
+    detail << '|' << coapTypeName(type) << '|' << coapCodeName(code);
+    if (version != 1 || token_length > 8 || len < static_cast<std::size_t>(4 + token_length)) {
+        meta.malformed = true;
+        detail << "|malform";
+        meta.detail = detail.str();
+        return meta;
+    }
+
+    std::size_t offset = 4 + token_length;
+    std::uint32_t option_number = 0;
+    std::string uri_path;
+    bool observe = false;
+
+    while (offset < len) {
+        if (data[offset] == 0xFF) {
+            break;
+        }
+
+        const std::uint8_t header = data[offset++];
+        const std::uint8_t delta_nibble = static_cast<std::uint8_t>((header >> 4) & 0x0F);
+        const std::uint8_t length_nibble = static_cast<std::uint8_t>(header & 0x0F);
+
+        std::uint32_t delta = 0;
+        std::uint32_t value_length = 0;
+        if (!decodeExtendedField(data, len, offset, delta_nibble, delta) ||
+            !decodeExtendedField(data, len, offset, length_nibble, value_length)) {
+            meta.malformed = true;
+            detail << "|malform";
+            meta.detail = detail.str();
+            return meta;
+        }
+
+        option_number += delta;
+        if (offset + value_length > len) {
+            meta.malformed = true;
+            detail << "|malform";
+            meta.detail = detail.str();
+            return meta;
+        }
+
+        if (option_number == 6) {
+            observe = true;
+        } else if (option_number == 11) {
+            if (!uri_path.empty()) {
+                uri_path += '/';
+            }
+            uri_path.append(reinterpret_cast<const char*>(data + offset), value_length);
+        }
+
+        offset += value_length;
+    }
+
+    if (!uri_path.empty()) {
+        detail << "|path:/" << uri_path;
+        if (uri_path == ".well-known/core") {
+            detail << "|discovery";
+        }
+    }
+    if (observe) {
+        detail << "|observe";
+    }
+
+    meta.detail = detail.str();
+    return meta;
 }
 
 }  // namespace
@@ -106,8 +256,11 @@ ProtocolEvent CoapModule::parse(const std::uint8_t* data, std::size_t len) {
     event.source_id = "coap-source";
     event.direction = "incoming";
     event.event_type = "traffic";
-    event.detail = "client_to_backend";
     event.payload.assign(data, data + len);
+
+    const CoapMetadata meta = parseCoapMetadata(data, len, "client_to_backend");
+    event.event_type = meta.event_type;
+    event.detail = meta.detail;
     return event;
 }
 
@@ -160,8 +313,7 @@ void CoapModule::ioLoop() {
             if (received > 0) {
                 ProtocolEvent event = parse(buffer.data(), static_cast<std::size_t>(received));
                 event.direction = "incoming";
-                event.event_type = "traffic";
-                event.detail = "client_to_backend";
+                event.source_id = endpointToString(client_addr) + ':' + std::to_string(ntohs(client_addr.sin_port));
                 const RawFeatureVector raw = extractFeatures(event);
                 const NormalizedFeatureVector normalized = normalize(raw);
                 const detection::DetectionResult detection_result =
@@ -199,9 +351,9 @@ void CoapModule::ioLoop() {
                         events_path_,
                         "coap",
                         "incoming",
-                        "traffic",
+                        event.event_type,
                         static_cast<std::size_t>(received),
-                        "client_to_backend");
+                        event.detail);
                 }
             }
         }
@@ -209,6 +361,14 @@ void CoapModule::ioLoop() {
         if (FD_ISSET(backend_fd_, &read_fds)) {
             const ssize_t received = ::recv(backend_fd_, buffer.data(), buffer.size(), 0);
             if (received > 0) {
+                ProtocolEvent event = parse(buffer.data(), static_cast<std::size_t>(received));
+                event.direction = "outgoing";
+                if (event.detail.rfind("client_to_backend|", 0) == 0) {
+                    event.detail.replace(0, std::strlen("client_to_backend"), "backend_to_client");
+                } else {
+                    event.detail = "backend_to_client|" + event.detail;
+                }
+
                 std::uint16_t message_id = 0;
                 bool routed = false;
 
@@ -247,9 +407,9 @@ void CoapModule::ioLoop() {
                         events_path_,
                         "coap",
                         "outgoing",
-                        "traffic",
+                        event.event_type,
                         static_cast<std::size_t>(received),
-                        "backend_to_client");
+                        event.detail);
                 } else {
                     eventlog::appendEvent(
                         events_path_,

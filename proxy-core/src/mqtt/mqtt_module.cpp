@@ -4,6 +4,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <iostream>
+#include <sstream>
 
 #include <arpa/inet.h>
 #include <netdb.h>
@@ -35,6 +36,160 @@ int envToInt(const char* value, int fallback) {
     }
 
     return static_cast<int>(parsed);
+}
+
+bool decodeRemainingLength(
+    const std::uint8_t* data,
+    std::size_t len,
+    std::size_t& remaining_length,
+    std::size_t& bytes_used) {
+    if (len < 2) {
+        return false;
+    }
+
+    std::size_t multiplier = 1;
+    remaining_length = 0;
+    bytes_used = 0;
+
+    while (1 + bytes_used < len) {
+        const std::uint8_t encoded = data[1 + bytes_used];
+        remaining_length += static_cast<std::size_t>(encoded & 0x7F) * multiplier;
+        ++bytes_used;
+
+        if ((encoded & 0x80) == 0) {
+            return true;
+        }
+
+        multiplier *= 128;
+        if (bytes_used >= 4) {
+            return false;
+        }
+    }
+
+    return false;
+}
+
+bool readMqttUtf8(const std::uint8_t* data, std::size_t len, std::size_t& offset, std::string& out) {
+    if (offset + 2 > len) {
+        return false;
+    }
+
+    const std::size_t str_len =
+        (static_cast<std::size_t>(data[offset]) << 8) | static_cast<std::size_t>(data[offset + 1]);
+    offset += 2;
+    if (offset + str_len > len) {
+        return false;
+    }
+
+    out.assign(reinterpret_cast<const char*>(data + offset), str_len);
+    offset += str_len;
+    return true;
+}
+
+std::string mqttPacketName(std::uint8_t packet_type) {
+    switch (packet_type) {
+        case 1:
+            return "connect";
+        case 2:
+            return "connack";
+        case 3:
+            return "publish";
+        case 4:
+            return "puback";
+        case 5:
+            return "pubrec";
+        case 6:
+            return "pubrel";
+        case 7:
+            return "pubcomp";
+        case 8:
+            return "subscribe";
+        case 9:
+            return "suback";
+        case 10:
+            return "unsubscribe";
+        case 11:
+            return "unsuback";
+        case 12:
+            return "pingreq";
+        case 13:
+            return "pingresp";
+        case 14:
+            return "disconnect";
+        default:
+            return "unknown";
+    }
+}
+
+std::string mqttConnectClientId(const std::uint8_t* data, std::size_t len) {
+    std::size_t remaining_length = 0;
+    std::size_t bytes_used = 0;
+    if (!decodeRemainingLength(data, len, remaining_length, bytes_used)) {
+        return {};
+    }
+
+    std::size_t offset = 1 + bytes_used;
+    std::string protocol_name;
+    if (!readMqttUtf8(data, len, offset, protocol_name)) {
+        return {};
+    }
+
+    if (offset + 4 > len) {
+        return {};
+    }
+
+    offset += 4;  // protocol level, connect flags, keepalive
+    std::string client_id;
+    if (!readMqttUtf8(data, len, offset, client_id)) {
+        return {};
+    }
+
+    return client_id;
+}
+
+std::string mqttPublishTopic(const std::uint8_t* data, std::size_t len) {
+    std::size_t remaining_length = 0;
+    std::size_t bytes_used = 0;
+    if (!decodeRemainingLength(data, len, remaining_length, bytes_used)) {
+        return {};
+    }
+
+    std::size_t offset = 1 + bytes_used;
+    std::string topic;
+    if (!readMqttUtf8(data, len, offset, topic)) {
+        return {};
+    }
+    return topic;
+}
+
+bool mqttSubscribeHasWildcard(const std::uint8_t* data, std::size_t len) {
+    std::size_t remaining_length = 0;
+    std::size_t bytes_used = 0;
+    if (!decodeRemainingLength(data, len, remaining_length, bytes_used)) {
+        return false;
+    }
+
+    std::size_t offset = 1 + bytes_used;
+    if (offset + 2 > len) {
+        return false;
+    }
+
+    offset += 2;  // packet identifier
+    while (offset < len) {
+        std::string topic_filter;
+        if (!readMqttUtf8(data, len, offset, topic_filter)) {
+            return false;
+        }
+        if (topic_filter.find('#') != std::string::npos || topic_filter.find('+') != std::string::npos) {
+            return true;
+        }
+        if (offset >= len) {
+            break;
+        }
+        ++offset;  // requested qos
+    }
+
+    return false;
 }
 
 }  // namespace
@@ -139,8 +294,41 @@ ProtocolEvent MqttModule::parse(const std::uint8_t* data, std::size_t len) {
     event.source_id = "mqtt-client";
     event.direction = "incoming";
     event.event_type = "traffic";
-    event.detail = "client_to_broker";
     event.payload.assign(data, data + len);
+
+    if (len == 0) {
+        event.detail = "client_to_broker|malform|empty";
+        return event;
+    }
+
+    const std::uint8_t packet_type = static_cast<std::uint8_t>((data[0] >> 4) & 0x0F);
+    std::ostringstream detail;
+    detail << "client_to_broker|" << mqttPacketName(packet_type);
+
+    std::size_t remaining_length = 0;
+    std::size_t bytes_used = 0;
+    const bool valid_remaining = decodeRemainingLength(data, len, remaining_length, bytes_used);
+    if (!valid_remaining || (1 + bytes_used + remaining_length) > len) {
+        detail << "|malform";
+    }
+
+    if (packet_type == 1) {
+        event.event_type = "connection_open";
+        const std::string client_id = mqttConnectClientId(data, len);
+        if (!client_id.empty()) {
+            event.source_id = client_id;
+            detail << "|client_id:" << client_id;
+        }
+    } else if (packet_type == 3) {
+        const std::string topic = mqttPublishTopic(data, len);
+        if (!topic.empty()) {
+            detail << "|topic:" << topic;
+        }
+    } else if (packet_type == 8 && mqttSubscribeHasWildcard(data, len)) {
+        detail << "|wildcard";
+    }
+
+    event.detail = detail.str();
     return event;
 }
 
@@ -223,8 +411,9 @@ void MqttModule::handleClient(int client_fd) {
 
             ProtocolEvent event = parse(buffer.data(), static_cast<std::size_t>(received));
             event.direction = "incoming";
-            event.event_type = "traffic";
-            event.detail = "client_to_broker";
+            if (event.detail.rfind("client_to_broker|", 0) != 0) {
+                event.detail = "client_to_broker|" + event.detail;
+            }
             const RawFeatureVector raw = extractFeatures(event);
             const NormalizedFeatureVector normalized = normalize(raw);
             const detection::DetectionResult detection_result =
@@ -251,9 +440,9 @@ void MqttModule::handleClient(int client_fd) {
                 events_path_,
                 "mqtt",
                 "incoming",
-                "traffic",
+                event.event_type,
                 static_cast<std::size_t>(received),
-                "client_to_broker");
+                event.detail);
 
             ssize_t sent_total = 0;
             while (sent_total < received) {
@@ -280,13 +469,21 @@ void MqttModule::handleClient(int client_fd) {
                 break;
             }
 
+            ProtocolEvent event = parse(buffer.data(), static_cast<std::size_t>(received));
+            event.direction = "outgoing";
+            if (event.detail.rfind("client_to_broker|", 0) == 0) {
+                event.detail.replace(0, std::strlen("client_to_broker"), "broker_to_client");
+            } else {
+                event.detail = "broker_to_client|" + event.detail;
+            }
+
             eventlog::appendEvent(
                 events_path_,
                 "mqtt",
                 "outgoing",
-                "traffic",
+                event.event_type,
                 static_cast<std::size_t>(received),
-                "broker_to_client");
+                event.detail);
 
             ssize_t sent_total = 0;
             while (sent_total < received) {

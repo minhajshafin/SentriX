@@ -157,6 +157,7 @@ CMakeFiles/sentrix_proxy.dir/src/coap/coap_module.cpp.o: /home/billy/X/SentriX/p
   /usr/include/c++/15.2.1/bits/range_access.h \
   /usr/include/c++/15.2.1/bits/refwrap.h \
   /usr/include/c++/15.2.1/bits/requires_hosted.h \
+  /usr/include/c++/15.2.1/bits/sstream.tcc \
   /usr/include/c++/15.2.1/bits/std_abs.h \
   /usr/include/c++/15.2.1/bits/std_mutex.h \
   /usr/include/c++/15.2.1/bits/std_thread.h \
@@ -222,6 +223,7 @@ CMakeFiles/sentrix_proxy.dir/src/coap/coap_module.cpp.o: /home/billy/X/SentriX/p
   /usr/include/c++/15.2.1/pstl/glue_algorithm_defs.h \
   /usr/include/c++/15.2.1/pstl/pstl_config.h \
   /usr/include/c++/15.2.1/ratio \
+  /usr/include/c++/15.2.1/sstream \
   /usr/include/c++/15.2.1/stdexcept \
   /usr/include/c++/15.2.1/streambuf \
   /usr/include/c++/15.2.1/string \
@@ -1895,6 +1897,7 @@ CMakeFiles/sentrix_proxy.dir/src/mqtt/mqtt_module.cpp.o: /home/billy/X/SentriX/p
   /usr/include/c++/15.2.1/bits/range_access.h \
   /usr/include/c++/15.2.1/bits/refwrap.h \
   /usr/include/c++/15.2.1/bits/requires_hosted.h \
+  /usr/include/c++/15.2.1/bits/sstream.tcc \
   /usr/include/c++/15.2.1/bits/std_abs.h \
   /usr/include/c++/15.2.1/bits/std_mutex.h \
   /usr/include/c++/15.2.1/bits/std_thread.h \
@@ -1958,6 +1961,7 @@ CMakeFiles/sentrix_proxy.dir/src/mqtt/mqtt_module.cpp.o: /home/billy/X/SentriX/p
   /usr/include/c++/15.2.1/pstl/glue_algorithm_defs.h \
   /usr/include/c++/15.2.1/pstl/pstl_config.h \
   /usr/include/c++/15.2.1/ratio \
+  /usr/include/c++/15.2.1/sstream \
   /usr/include/c++/15.2.1/stdexcept \
   /usr/include/c++/15.2.1/streambuf \
   /usr/include/c++/15.2.1/string \
@@ -2139,8 +2143,6 @@ CMakeFiles/sentrix_proxy.dir/src/coap/coap_module.cpp.o:
 
 /usr/include/c++/15.2.1/stdlib.h:
 
-/usr/include/c++/15.2.1/sstream:
-
 /usr/include/c++/15.2.1/pstl/glue_memory_defs.h:
 
 /usr/include/c++/15.2.1/memory:
@@ -2152,8 +2154,6 @@ CMakeFiles/sentrix_proxy.dir/src/coap/coap_module.cpp.o:
 /usr/include/c++/15.2.1/bits/stream_iterator.h:
 
 /usr/include/c++/15.2.1/bits/stl_raw_storage_iter.h:
-
-/usr/include/c++/15.2.1/bits/sstream.tcc:
 
 /usr/include/c++/15.2.1/bits/specfun.h:
 
@@ -2240,6 +2240,12 @@ CMakeFiles/sentrix_proxy.dir/src/common/feature_mapping.cpp.o:
 /usr/include/rpc/netdb.h:
 
 /usr/include/netinet/in.h:
+
+/usr/lib/libpthread.so.0:
+
+/usr/lib/libstdc++.so:
+
+/usr/include/locale.h:
 
 /usr/include/c++/15.2.1/bits/exception_ptr.h:
 
@@ -2354,6 +2360,8 @@ CMakeFiles/sentrix_proxy.dir/src/common/proxy_core.cpp.o:
 /usr/include/bits/types/__fpos_t.h:
 
 /usr/include/bits/types/__locale_t.h:
+
+/usr/include/c++/15.2.1/bits/sstream.tcc:
 
 /usr/include/bits/types/__fpos64_t.h:
 
@@ -2749,12 +2757,6 @@ CMakeFiles/sentrix_proxy.dir/src/common/main.cpp.o:
 
 /usr/include/c++/15.2.1/bits/string_view.tcc:
 
-/usr/lib/libpthread.so.0:
-
-/usr/lib/libstdc++.so:
-
-/usr/include/locale.h:
-
 /usr/include/bits/siginfo-arch.h:
 
 /usr/include/c++/15.2.1/cwchar:
@@ -2828,6 +2830,8 @@ CMakeFiles/sentrix_proxy.dir/src/common/main.cpp.o:
 /usr/include/bits/floatn-common.h:
 
 /usr/include/c++/15.2.1/ratio:
+
+/usr/include/c++/15.2.1/sstream:
 
 /usr/include/c++/15.2.1/string:
 
