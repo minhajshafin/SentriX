@@ -878,8 +878,12 @@ PYTHONWARNINGS=ignore OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
   - CoAP ingress path in `proxy-core/src/coap/coap_module.cpp`
 - ✅ Added detection metric increments (`addDetections`) in metrics store
 - ✅ Build validated successfully (`cmake -S . -B build && cmake --build build -j`)
+- ✅ ONNX Runtime inference path integrated into `InferenceEngine` with safe fallback heuristic
+- ✅ ONNX-enabled native build now working via local SDK at `proxy-core/third_party/onnxruntime`
+- ✅ ONNX model artifact generated: `ml-pipeline/models/lightgbm_full.onnx` (1.2 MB)
+- ✅ ONNX-vs-pickle prediction agreement validated: 1.0 (`ml-pipeline/reports/week6_onnx_validation.json`)
 
-**Current status:** protocol modules now run parse -> feature extraction -> normalization -> rule/inference -> mitigation decision inline before forwarding. ML model-backed inference (ONNX Runtime) remains next.
+**Current status:** protocol modules now run parse -> feature extraction -> normalization -> rule/inference -> mitigation decision inline before forwarding, and ONNX-backed inference is now available when `SENTRIX_ONNX_MODEL_PATH` is set.
 
 ## Week 9
 
