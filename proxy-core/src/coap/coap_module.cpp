@@ -13,6 +13,7 @@
 #include <unistd.h>
 
 #include "sentrix/coap_module.hpp"
+#include "sentrix/detection_pipeline.hpp"
 #include "sentrix/event_log.hpp"
 #include "sentrix/metrics_store.hpp"
 
@@ -167,6 +168,25 @@ void CoapModule::ioLoop() {
                 &client_len);
 
             if (received > 0) {
+                const ProtocolEvent event = parse(buffer.data(), static_cast<std::size_t>(received));
+                const RawFeatureVector raw = extractFeatures(event);
+                const NormalizedFeatureVector normalized = normalize(raw);
+                const detection::DetectionResult detection_result =
+                    detection::evaluate(normalized, ProtocolKind::Coap);
+                mitigate(detection_result.decision);
+
+                if (!detection_result.decision.allow) {
+                    metrics::addDetections(1);
+                    eventlog::appendEvent(
+                        events_path_,
+                        "coap",
+                        "mitigation",
+                        detection_result.decision.action,
+                        static_cast<std::size_t>(received),
+                        detection_result.decision.reason);
+                    continue;
+                }
+
                 metrics::addCoapMessages(1);
 
                 std::uint16_t message_id = 0;

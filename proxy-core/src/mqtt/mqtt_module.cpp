@@ -12,6 +12,7 @@
 #include <unistd.h>
 
 #include "sentrix/mqtt_module.hpp"
+#include "sentrix/detection_pipeline.hpp"
 #include "sentrix/event_log.hpp"
 #include "sentrix/metrics_store.hpp"
 
@@ -228,6 +229,25 @@ void MqttModule::handleClient(int client_fd) {
             const ssize_t received = ::recv(client_fd, buffer.data(), buffer.size(), 0);
             if (received <= 0) {
                 break;
+            }
+
+            const ProtocolEvent event = parse(buffer.data(), static_cast<std::size_t>(received));
+            const RawFeatureVector raw = extractFeatures(event);
+            const NormalizedFeatureVector normalized = normalize(raw);
+            const detection::DetectionResult detection_result =
+                detection::evaluate(normalized, ProtocolKind::Mqtt);
+            mitigate(detection_result.decision);
+
+            if (!detection_result.decision.allow) {
+                metrics::addDetections(1);
+                eventlog::appendEvent(
+                    events_path_,
+                    "mqtt",
+                    "mitigation",
+                    detection_result.decision.action,
+                    static_cast<std::size_t>(received),
+                    detection_result.decision.reason);
+                continue;
             }
 
             const std::size_t frame_count = estimateMqttFrames(buffer.data(), static_cast<std::size_t>(received));
