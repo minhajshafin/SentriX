@@ -868,6 +868,19 @@ PYTHONWARNINGS=ignore OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
 - Implement MQTT protocol module (TCP listener, MQTT parser, feature extraction)
 - Implement CoAP protocol module (UDP listener, CoAP parser, feature extraction)
 
+### Week 7 Progress Update (In Progress)
+
+- ✅ Added shared detection scaffold in `proxy-core`:
+  - `RuleEngine` (Stage 1), `InferenceEngine` (Stage 2 heuristic scaffold), `MitigationEngine` (Stage 3 action decision)
+  - New files: `proxy-core/include/sentrix/detection_pipeline.hpp`, `proxy-core/src/common/detection_pipeline.cpp`
+- ✅ Wired detection execution into live ingress paths before forwarding:
+  - MQTT ingress path in `proxy-core/src/mqtt/mqtt_module.cpp`
+  - CoAP ingress path in `proxy-core/src/coap/coap_module.cpp`
+- ✅ Added detection metric increments (`addDetections`) in metrics store
+- ✅ Build validated successfully (`cmake -S . -B build && cmake --build build -j`)
+
+**Current status:** protocol modules now run parse -> feature extraction -> normalization -> rule/inference -> mitigation decision inline before forwarding. ML model-backed inference (ONNX Runtime) remains next.
+
 ## Week 9
 
 - Integration testing: MQTT proxy + Mosquitto, CoAP proxy + Californium

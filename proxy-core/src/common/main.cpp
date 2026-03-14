@@ -33,7 +33,8 @@ int main() {
     core.registerModule(std::make_unique<sentrix::CoapModule>());
 
     core.startAll();
-    std::cout << "SentriX proxy-core scaffold is running (stub mode). Press Ctrl+C to stop." << std::endl;
+    std::cout << "SentriX proxy-core running (Week 7 detection scaffold mode). Press Ctrl+C to stop."
+              << std::endl;
 
     std::signal(SIGINT, handleSignal);
     std::signal(SIGTERM, handleSignal);
