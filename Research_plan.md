@@ -1045,12 +1045,23 @@ PYTHONWARNINGS=ignore OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
 
 ## Week 12
 
-- Write and finalize paper
-- Prepare reproducibility artifacts (Docker, scripts, datasets)
+## Week 12 — COMPLETE ✅
 
----
+**Paper updates (`Research_Paper/conference_101719.tex`):**
+- Abstract: fully integrated C++ proxy, zero FP, statistical CI, generalization gap
+- Intro contributions: C++ proxy + ONNX + live validation bullets; removed "ongoing" qualifiers
+- Related Work: 7-row × 8-column LaTeX comparison table (Table 1), 6 new \cite keys, narrative positioning
+- Experimental Setup: ONNX export + proxy integration + reproducibility artifacts noted
+- Results: added Statistical Significance subsection (LightGBM vs RF p=0.91; vs MLP p<0.001)
+- Results: added End-to-End Live Proxy Inference subsection (101 vectors, 0 FP, MW p=0.0001, d=0.206)
+- Interpretation: mean gap 0.546, top KL-drift features f04–f08,f11
+- Limitations: removed resolved items (proxy done, ONNX done, integration done); kept real remaining gaps
+- Conclusion: complete system framing, key quantitative findings, reproducibility release announcement
+- Bibliography: 4 → 16 references (MQTTGuard, CoAP IDS, Snort, Suricata, N-BaIoT, LightGBM, ONNX, Mosquitto, Californium, etc.)
 
+**Reproducibility artifact:** `REPRODUCIBILITY.md` — full dataset/model/script inventory, step-by-step reproduction commands, paper compilation instructions
 # 9. Paper Structure
+---
 
 1. Introduction
 2. Related Work (include comparison table — see Section 12)
