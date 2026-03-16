@@ -113,7 +113,12 @@ const server = http.createServer((req, res) => {
 
   // Routes
   if (req.method === 'GET') {
-    if (pathname === '/metrics') {
+    if (pathname === '/' || pathname === '') {
+      sendJSON(res, {
+        service: 'SentriX Metrics API',
+        endpoints: ['/metrics', '/features/stats', '/health'],
+      });
+    } else if (pathname === '/metrics') {
       sendJSON(res, readMetrics());
     } else if (pathname === '/features/stats') {
       sendJSON(res, readFeatureStats());
