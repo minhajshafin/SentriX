@@ -6,6 +6,7 @@ High-volume MQTT traffic for performance testing
 """
 
 import paho.mqtt.client as mqtt
+from paho.mqtt.enums import CallbackAPIVersion
 import time
 import json
 import sys
@@ -35,7 +36,7 @@ class SimpleMQTTStress:
     def client_thread(self, client_id):
         """Run MQTT client in thread"""
         try:
-            client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, f"stress_client_{client_id}")
+            client = mqtt.Client(CallbackAPIVersion.VERSION1, f"stress_client_{client_id}")
             client.on_connect = self.on_connect
             client.on_publish = self.on_publish
             client.on_disconnect = self.on_disconnect

@@ -6,6 +6,7 @@ Sustained high-volume MQTT traffic for performance and detection validation
 """
 
 import paho.mqtt.client as mqtt
+from paho.mqtt.enums import CallbackAPIVersion
 import time
 import json
 import sys
@@ -53,7 +54,7 @@ class MQTTStressClient:
     
     def publish_worker(self, client_id, duration_sec):
         """Publish messages at configured rate"""
-        client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, f"stress_publisher_{client_id}")
+        client = mqtt.Client(CallbackAPIVersion.VERSION1, f"stress_publisher_{client_id}")
         client.on_connect = self.on_connect
         client.on_message = self.on_message
         client.on_disconnect = self.on_disconnect

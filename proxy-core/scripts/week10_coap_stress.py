@@ -35,7 +35,7 @@ class CoAPStressClient:
     async def client_worker(self, client_id, duration_sec):
         """Async worker sending CoAP requests"""
         try:
-            context = await aiocoap.Context.create()
+            context = await aiocoap.Context.create_client_context()
             
             start_time = time.time()
             req_count = 0
