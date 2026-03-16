@@ -1005,11 +1005,43 @@ PYTHONWARNINGS=ignore OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
 4. **Conservative Thresholds**: Current 0.75 drop threshold leaves healthy margin for production deployment
 5. **Behavioral Mode Ready**: Feature drift is expected and manageable; mode approved for future retraining after production validation
 
-## Week 11
+## Week 11 ✅ COMPLETE
 
-- Generate figures, tables, ROC curves, ablation results
-- Statistical significance testing
-- Cross-protocol generalization analysis
+**Goal:** Generate paper figures, statistical significance testing, cross-protocol generalization analysis.
+
+### Figures Generated (`ml-pipeline/figures/`)
+- `fig1_model_comparison.png` — Grouped CV model comparison (F1-Macro, F1-Weighted, Accuracy) for all 4 models × 2 feature sets
+- `fig2_generalization_heatmap_f1macro.png` — Cross-protocol generalization heatmap (F1-Macro)
+- `fig2_generalization_heatmap_f1weighted.png` — Cross-protocol generalization heatmap (F1-Weighted)
+- `fig3_per_class_f1.png` — Per-class Precision/Recall/F1 for LightGBM (full, grouped CV)
+- `fig4_feature_drift.png` — Feature drift: legacy vs behavioral, sorted by drift magnitude + scatter
+- `fig5_anomaly_distribution.png` — Runtime anomaly score distribution by protocol (KDE + boxplot)
+- `fig6_threshold_sensitivity.png` — Detection threshold sensitivity (detection rate + false alarm rate)
+- `fig7_kl_divergence.png` — KL divergence heatmap: feature × attack_class (MQTT vs CoAP alignment)
+
+### Statistical Analysis (`ml-pipeline/reports/week11_statistical_analysis.json`)
+
+**Best Model:** LightGBM, full features, grouped CV
+- Accuracy: 0.7796 | F1-Macro: 0.5977 (95% CI: [0.5886, 0.6068])
+
+**Pairwise Comparisons (grouped CV, full features):**
+- LightGBM vs Random Forest: ΔF1=+0.0008, p=0.9080 (not significant — similar performance)
+- LightGBM vs MLP: ΔF1=+0.0521, p<0.001 (significant)
+- LightGBM vs LogReg: ΔF1=+0.2100, p<0.001 (significant)
+
+**Cross-Protocol Generalization Gap (LightGBM, full features):**
+- In-protocol (grouped CV): F1=0.5977
+- CoAP→MQTT (cross-protocol): F1=0.0784, Δ=0.5193
+- MQTT→CoAP (cross-protocol): F1=0.0254, Δ=0.5723
+- **Mean generalization gap: 0.5458** — strong indication protocol-normalized features need improvement
+
+**Runtime Anomaly Scores (n=101 live inference vectors):**
+- MQTT mean=0.2202 [95% CI: 0.197–0.247], p95=0.513, flagged@0.75=0
+- CoAP mean=0.2016 [95% CI: 0.188–0.226], p95=0.253, flagged@0.75=0
+- Mann-Whitney U: MQTT vs CoAP significantly different (p=0.0001, Cohen's d=0.206)
+- **Zero false positives** confirmed at threshold 0.75
+
+**Top Discriminative Features (KL divergence MQTT vs CoAP):** f06, f05, f04, f08, f11 (all ~27.6), f12 (27.5), f02 (18.0), f13 (5.9)
 
 ## Week 12
 

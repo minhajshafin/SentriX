@@ -45,6 +45,7 @@ data/raw/*
 !data/raw/.gitkeep
 ml-pipeline/reports
 ml-pipeline/models
+ml-pipeline/figures
 
 # Research paper: keep only main tex source tracked
 Research_Paper/*
