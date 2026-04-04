@@ -25,7 +25,7 @@
 \maketitle
 
 \begin{abstract}
-This paper presents SentriX, a middleware-independent multi-stage security proxy for heterogeneous IoT protocols. SentriX unifies MQTT and CoAP behavioral detection through a fixed 33-dimensional feature abstraction (15 normalized behavioral dimensions + protocol identity + auxiliary features) without broker modification or protocol translation. A cross-protocol threat model covers volumetric, semantic, amplification, and slow-rate attacks across both protocol stacks. The implemented C++ proxy pipeline integrates rule-based filtering, ONNX-accelerated ML inference, and protocol-specific mitigation in a single in-line edge path. Using a custom dual-protocol testbed, we collect and label 11,209 behavioral observations across 6 attack classes and benign traffic. Four ML models are trained and evaluated using 5-fold stratified group cross-validation, with LightGBM achieving F1-macro of 0.5977 (accuracy 0.7796, 95\% CI [0.589, 0.607]). End-to-end live proxy inference over 101 runtime vectors confirms zero false positives at threshold 0.75. Cross-protocol zero-shot transfer yields F1-macro $\approx$ 0.08, revealing a generalization gap confirmed by Mann-Whitney U test between MQTT and CoAP anomaly score distributions (p = 0.0001). This work delivers a complete architecture, fully integrated C++ implementation, and reproducible evaluation artifacts for edge-native IoT anomaly detection across heterogeneous protocols.
+This paper presents SentriX, a middleware-independent multi-stage security proxy for heterogeneous IoT protocols. SentriX unifies MQTT and CoAP behavioral detection through a fixed 33-dimensional feature abstraction (15 normalized behavioral dimensions + protocol identity + auxiliary features) without broker modification or protocol translation. A cross-protocol threat model covers volumetric, semantic, amplification, and slow-rate attacks across both protocol stacks. The implemented C++ proxy pipeline integrates rule-based filtering, ONNX-accelerated ML inference, and protocol-specific mitigation in a single in-line edge path. Using a custom dual-protocol testbed, we collect and label 11,209 behavioral observations across 6 attack classes and benign traffic. Four ML models are trained and evaluated using 5-fold stratified group cross-validation, with LightGBM achieving F1-macro of 0.5977 (accuracy 0.7796, 95\% CI [0.589, 0.607]). Live proxy validation over 101 runtime vectors confirms zero false positives at threshold 0.75, and a direct-vs-proxy latency check shows a mean overhead of 0.306 ms. Cross-protocol zero-shot transfer yields F1-macro $\approx$ 0.08, highlighting the generalization gap confirmed by Mann-Whitney U test between MQTT and CoAP anomaly score distributions (p = 0.0001). This work provides a measured baseline architecture, a reproducible dataset, and a complete C++ implementation for edge-native IoT anomaly detection across heterogeneous protocols.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -42,15 +42,15 @@ The main contributions are as follows:
 \item A formal protocol-normalized feature abstraction with 33 fixed dimensions (15 behavioral + 2 protocol ID + 16 auxiliary), frozen as a specification enabling reproducible cross-protocol evaluation.
 \item A dual-protocol testbed and reproducible dataset generation pipeline with 11,209 labeled observations across 6 attack classes and 2 protocols.
 \item A cross-protocol threat model grounding attacks in protocol-specific semantics for both MQTT and CoAP.
-\item A fully implemented C++ reverse proxy with ONNX-runtime inference, validated end-to-end with 101 live vectors and zero false positives at the deployed threshold.
-\item ML evaluation showing F1-macro 0.5977 (LightGBM, 5-fold grouped CV) with statistical significance confirmed against MLP and LogReg; weak zero-shot cross-protocol generalization (mean gap 0.546) identified as a key open challenge.
+\item A fully implemented C++ reverse proxy with ONNX-runtime inference, validated end-to-end with 101 live vectors, zero false positives at the deployed threshold, and a measured mean proxy overhead of 0.306 ms.
+\item ML evaluation showing F1-macro 0.5977 (LightGBM, 5-fold grouped CV) with statistical significance confirmed against MLP and LogReg; weak zero-shot cross-protocol generalization (mean gap 0.546) identified as a key open challenge rather than a solved deployment result.
 \item An extensible architecture with a documented \texttt{IProtocolModule} C++ interface for adding new IoT protocols.
 \end{itemize}
 
 \section{Related Work and Motivation}
 Prior IoT security systems can be grouped into: (i) protocol-specific detectors, (ii) broker-integrated plugins, (iii) network-level IDS, (iv) cloud-side anomaly detectors, and (v) protocol translators or gateways. Protocol-specific systems (e.g., MQTT IDS variants~\cite{mqtt_ml_ids}, MQTTGuard~\cite{mqttguard}, CoAP-focused defenses~\cite{coap_ids}) typically capture rich semantics but do not generalize across heterogeneous protocols. Broker plugins~\cite{broker_plugin} require broker-level integration and lack portability across broker implementations. Network IDS solutions such as Snort~\cite{snort} and Suricata~\cite{suricata} rely on packet or flow features that underrepresent application semantics, and do not support in-line per-protocol behavioral normalization. Cloud-side anomaly detection~\cite{cloud_iot_ml} introduces upstream connectivity dependencies and increased control-loop latency, making it unsuitable for edge-native mitigation. Protocol translators and IoT gateways~\cite{iot_gateway} violate strict protocol-preservation constraints in security-critical paths.
 
-Table~\ref{tab:related} summarizes the key differentiators with representative prior work. The core gap is not simply multi-protocol support, but secure, in-line, protocol-preserving detection with shared behavioral learning across heterogeneous protocol semantics. SentriX is, to the best of our knowledge, the first system to (1) unify MQTT and CoAP behavioral features in a shared normalized representation, (2) deploy that representation in a standalone C++ reverse proxy with zero broker modification, and (3) quantify cross-protocol generalization under controlled zero-shot transfer conditions.
+Table~\ref{tab:related} summarizes the key differentiators with representative prior work. The core gap is not simply multi-protocol support, but secure, in-line, protocol-preserving detection with shared behavioral learning across heterogeneous protocol semantics. We position SentriX as a baseline architecture that (1) unifies MQTT and CoAP behavioral features in a shared normalized representation, (2) deploys that representation in a standalone C++ reverse proxy with zero broker modification, and (3) quantifies cross-protocol generalization under controlled zero-shot transfer conditions.
 
 \begin{table}[h]
 \centering
@@ -252,6 +252,27 @@ Pairwise model comparisons on grouped CV (full feature set, n = 11,209) use a no
 \subsection{End-to-End Live Proxy Inference}
 The integrated C++ proxy was exercised over 101 runtime feature vectors (87 MQTT, 14 CoAP) collected from live proxy traffic. Anomaly scores range from 0.159 to 0.678 with all-protocol mean 0.218 and P95 0.458. At the deployed threshold of 0.75, zero vectors are flagged — confirming zero false positives in benign traffic. MQTT and CoAP anomaly score distributions differ significantly (Mann-Whitney U, p = 0.0001, Cohen's $d$ = 0.206), consistent with residual protocol-specific signal retained even after normalization. Bootstrap 95\% confidence intervals: MQTT mean 0.220 [0.197, 0.247]; CoAP mean 0.202 [0.188, 0.226]. Figure~\ref{fig:runtime_anomaly_distribution} shows the observed runtime score distributions and threshold margin.
 
+\subsection{Proxy Latency Benchmark}
+Week 8 validation also measured direct forwarding against the in-line proxy path on the live MQTT/CoAP setup. The proxy adds sub-millisecond overhead at every reported percentile, with a mean increase of 0.306 ms relative to direct forwarding.
+
+\begin{table}[h]
+\centering
+\caption{Direct-vs-Proxy Latency Benchmark (Week 8 Validation)}
+\label{tab:latency}
+\begin{tabular}{lccc}
+\hline
+\textbf{Metric} & \textbf{Direct (ms)} & \textbf{Proxy (ms)} & \textbf{Overhead} \\
+\hline
+Min & 0.039 & 0.251 & +0.211 \\
+p50 & 0.050 & 0.377 & +0.327 \\
+p95 & 0.133 & 0.616 & +0.482 \\
+Mean & 0.086 & 0.392 & +0.306 \\
+\hline
+\end{tabular}
+\end{table}
+
+The measured absolute overhead remains below 1 ms across the reported distribution. Sustained throughput under heavy mixed-protocol load is not yet benchmarked in this draft and remains future work.
+
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{../ml-pipeline/figures/fig5_anomaly_distribution.png}
@@ -266,16 +287,16 @@ The success of within-protocol learning (F1 $\approx$ 0.60) combined with failur
 SentriX delivers a complete architecture and integrated system but has the following remaining limitations:
 \begin{itemize}
 \item \textbf{Cross-Protocol Generalization:} The mean generalization gap of 0.546 between in-protocol and cross-protocol F1 is the primary technical limitation. Future work should investigate adversarial domain adaptation, protocol-conditioned fine-tuning, and shared subspace alignment techniques to close this gap.
-\item \textbf{Latency and Throughput Benchmarking:} End-to-end per-hop latency and maximum throughput under load have not been formally measured. A dedicated profiling run with timestamped proxy logs is required before deployment-readiness claims can be made.
-\item \textbf{Scale and Stress Testing:} The live evaluation used 101 vectors under benign conditions. Sustained concurrent attack traffic, mixed MQTT+CoAP stress at production rates, and degradation analysis under overload are deferred to future work.
-\item \textbf{Comparison with Baseline Systems:} No head-to-head comparison with deployed MQTT IDS, CoAP IDS, or network-level IDS systems (e.g., Suricata with IoT protocol parsers) was conducted in this work.
+\item \textbf{Latency and Throughput Benchmarking:} The paper now reports direct-vs-proxy latency, but sustained throughput under heavy load and degradation curves are still missing. A dedicated profiling run with timestamped proxy logs is required before deployment-readiness claims can be made.
+\item \textbf{Scale and Stress Testing:} The live evaluation used 101 vectors under benign conditions. Sustained concurrent attack traffic, mixed MQTT+CoAP stress at production rates, and degradation analysis under overload remain future work.
+\item \textbf{Comparison with Baseline Systems:} No head-to-head comparison with deployed MQTT IDS, CoAP IDS, or network-level IDS systems (e.g., Suricata with IoT protocol parsers) was conducted in this work; the present study instead establishes internal baselines against direct forwarding and within-protocol models.
 \item \textbf{Dataset Scale:} The labeled dataset of 11,209 observations covers 6 attack classes. Expanding to include slow-rate and amplification attacks under more realistic traffic conditions, and increasing CoAP coverage (currently 40\% of the dataset), would improve generalization.
 \end{itemize}
 
 \section{Conclusion}
-SentriX presents a complete, middleware-independent multi-stage security proxy for heterogeneous IoT protocols. Through a protocol-normalized 33-dimensional behavioral feature abstraction, a single LightGBM model achieves F1-macro 0.5977 (accuracy 0.7796, 95\% CI [0.589, 0.607]) on 5-fold grouped cross-validation over 11,209 labeled observations spanning MQTT and CoAP attack classes. The C++ proxy integrates ONNX-accelerated inference end-to-end, confirmed with zero false positives over 101 live runtime vectors at threshold 0.75.
+SentriX presents a complete, middleware-independent multi-stage security proxy for heterogeneous IoT protocols. Through a protocol-normalized 33-dimensional behavioral feature abstraction, a single LightGBM model achieves F1-macro 0.5977 (accuracy 0.7796, 95\% CI [0.589, 0.607]) on 5-fold grouped cross-validation over 11,209 labeled observations spanning MQTT and CoAP attack classes. The C++ proxy integrates ONNX-accelerated inference end-to-end, confirmed with zero false positives over 101 live runtime vectors at threshold 0.75 and a measured mean latency overhead of 0.306 ms.
 
-The principal research finding is a large cross-protocol generalization gap (mean $\Delta$F1 = 0.546): protocol-normalized behavioral features support strong within-protocol detection but do not transfer zero-shot across MQTT and CoAP. Statistical analysis confirms that MQTT and CoAP anomaly score distributions are significantly different (Mann-Whitney p = 0.0001), and feature drift analysis identifies rate, entropy, and reliability-level dimensions (f04--f08, f11) as the primary sources of cross-protocol divergence. These findings establish a quantitative foundation and an open challenge for future cross-protocol domain adaptation research.
+The principal research finding is a large cross-protocol generalization gap (mean $\Delta$F1 = 0.546): protocol-normalized behavioral features support strong within-protocol detection but do not transfer zero-shot across MQTT and CoAP. Statistical analysis confirms that MQTT and CoAP anomaly score distributions are significantly different (Mann-Whitney p = 0.0001), and feature drift analysis identifies rate, entropy, and reliability-level dimensions (f04--f08, f11) as the primary sources of cross-protocol divergence. These findings establish the paper as a benchmark study of the normalization framework and the transfer gap, not a claim that zero-shot detection is solved.
 
 SentriX is released as an end-to-end reproducible artifact including C++ source, Python training pipeline, ONNX model, labeled dataset, traffic simulators, Docker infrastructure, and a real-time monitoring dashboard.
 
