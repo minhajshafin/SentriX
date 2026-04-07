@@ -52,7 +52,7 @@ Prior IoT security systems can be grouped into: (i) protocol-specific detectors,
 
 Table~\ref{tab:related} summarizes the key differentiators with representative prior work. The core gap is not simply multi-protocol support, but secure, in-line, protocol-preserving detection with shared behavioral learning across heterogeneous protocol semantics. We position SentriX as a baseline architecture that (1) unifies MQTT and CoAP behavioral features in a shared normalized representation, (2) deploys that representation in a standalone C++ reverse proxy with zero broker modification, and (3) quantifies cross-protocol generalization under controlled zero-shot transfer conditions.
 
-\begin{table}[h]
+\begin{table}[!t]
 \centering
 \caption{Comparison with Related Work}
 \label{tab:related}
@@ -214,7 +214,7 @@ LogReg & 0.3895 & 0.5388 & 0.5456 \\
 \end{tabular}
 \end{table}
 
-\begin{figure}[t]
+\begin{figure}[!t]
 \centering
 \includegraphics[width=\columnwidth]{../ml-pipeline/figures/fig1_model_comparison.png}
 \caption{Model comparison across evaluation settings. LightGBM and RandomForest are near-tied on grouped CV, while MLP and LogReg underperform.}
@@ -224,7 +224,7 @@ LogReg & 0.3895 & 0.5388 & 0.5456 \\
 \subsection{Cross-Protocol Generalization (Zero-Shot Transfer)}
 Training on one protocol and testing on the other reveals substantially weaker performance. CoAP-only training tested on MQTT yields F1-macro = 0.0899 (vs. 0.5977 for grouped CV). MQTT-only training tested on CoAP yields F1-macro = 0.0929. This indicates that while protocol-normalized behavioral features are learnable within-protocol, they do not transfer across protocols without explicit domain adaptation techniques. Figure~\ref{fig:generalization_heatmap} highlights this strong diagonal and weak off-diagonal structure.
 
-\begin{table}[h]
+\begin{table}[!t]
 \centering
 \caption{Cross-Protocol Zero-Shot Transfer (LightGBM)}
 \label{tab:transfer}
@@ -239,7 +239,7 @@ MQTT $\to$ CoAP & 0.0929 & 0.2526 \\
 \end{tabular}
 \end{table}
 
-\begin{figure}[t]
+\begin{figure}[!t]
 \centering
 \includegraphics[width=\columnwidth]{../ml-pipeline/figures/fig2_generalization_heatmap_f1macro.png}
 \caption{F1-macro generalization heatmap. In-protocol blocks are strong, while cross-protocol blocks are weak, highlighting the transfer gap.}
@@ -249,13 +249,30 @@ MQTT $\to$ CoAP & 0.0929 & 0.2526 \\
 \subsection{Statistical Significance}
 Pairwise model comparisons on grouped CV (full feature set, n = 11,209) use a normal approximation to the difference in F1-macro scores. LightGBM vs. RandomForest yields $\Delta$F1 = +0.0008 (p = 0.91), indicating the two models are statistically equivalent and either is a valid deployment choice. LightGBM vs. MLP yields $\Delta$F1 = +0.0521 (p $<$ 0.001), and LightGBM vs. LogReg yields $\Delta$F1 = +0.2100 (p $<$ 0.001), both significant.
 
+\subsection{Per-Class Detection Behavior}
+Figure~\ref{fig:per_class_f1} reports class-wise precision, recall, and F1 for the deployed LightGBM model (full feature set, grouped CV). The plot highlights strong benign identification and uneven attack-class sensitivity, especially for cross-family protocol abuse categories. This class-level view clarifies why macro F1 remains moderate despite higher overall accuracy.
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{../ml-pipeline/figures/fig3_per_class_f1.png}
+\caption{Per-class precision, recall, and F1 for LightGBM on grouped CV. Class imbalance and protocol-specific attack semantics produce uneven per-class performance despite stable aggregate accuracy.}
+\label{fig:per_class_f1}
+\end{figure}
+
 \subsection{End-to-End Live Proxy Inference}
 The integrated C++ proxy was exercised over 101 runtime feature vectors (87 MQTT, 14 CoAP) collected from live proxy traffic. Anomaly scores range from 0.159 to 0.678 with all-protocol mean 0.218 and P95 0.458. At the deployed threshold of 0.75, zero vectors are flagged — confirming zero false positives in benign traffic. MQTT and CoAP anomaly score distributions differ significantly (Mann-Whitney U, p = 0.0001, Cohen's $d$ = 0.206), consistent with residual protocol-specific signal retained even after normalization. Bootstrap 95\% confidence intervals: MQTT mean 0.220 [0.197, 0.247]; CoAP mean 0.202 [0.188, 0.226]. Figure~\ref{fig:runtime_anomaly_distribution} shows the observed runtime score distributions and threshold margin.
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{../ml-pipeline/figures/fig5_anomaly_distribution.png}
+\caption{Runtime anomaly score distributions for live proxy inference (n=101). All observations remain below the deployed threshold 0.75, yielding zero false positives.}
+\label{fig:runtime_anomaly_distribution}
+\end{figure}
 
 \subsection{Proxy Latency Benchmark}
 Week 8 validation also measured direct forwarding against the in-line proxy path on the live MQTT/CoAP setup. The proxy adds sub-millisecond overhead at every reported percentile, with a mean increase of 0.306 ms relative to direct forwarding.
 
-\begin{table}[h]
+\begin{table}[!t]
 \centering
 \caption{Direct-vs-Proxy Latency Benchmark (Week 8 Validation)}
 \label{tab:latency}
@@ -273,15 +290,34 @@ Mean & 0.086 & 0.392 & +0.306 \\
 
 The measured absolute overhead remains below 1 ms across the reported distribution. Sustained throughput under heavy mixed-protocol load is not yet benchmarked in this draft and remains future work.
 
-\begin{figure}[t]
+\subsection{Threshold Sensitivity}
+Figure~\ref{fig:threshold_sensitivity} shows the sensitivity of flagged-event rate to the anomaly threshold over the 101 live vectors. The deployed threshold (0.75) is conservative in this runtime snapshot: no vectors are flagged, while a substantially lower threshold rapidly increases flagged volume. This plot justifies the current operational point and provides a reproducible basis for future threshold calibration.
+
+\begin{figure}[!t]
 \centering
-\includegraphics[width=\columnwidth]{../ml-pipeline/figures/fig5_anomaly_distribution.png}
-\caption{Runtime anomaly score distributions for live proxy inference (n=101). All observations remain below the deployed threshold 0.75, yielding zero false positives.}
-\label{fig:runtime_anomaly_distribution}
+\includegraphics[width=\columnwidth]{../ml-pipeline/figures/fig6_threshold_sensitivity.png}
+\caption{Threshold sensitivity over live runtime vectors (n=101). The chosen threshold 0.75 operates in a conservative region with zero flagged benign vectors in this evaluation.}
+\label{fig:threshold_sensitivity}
 \end{figure}
 
 \subsection{Interpretation}
 The success of within-protocol learning (F1 $\approx$ 0.60) combined with failure of zero-shot transfer (F1 $\approx$ 0.08) indicates that protocol-specific auxiliary features and learned conditional boundaries dominate the decision function. The mean generalization gap of 0.546 quantifies the cost of cross-protocol deployment without domain adaptation. The statistically significant difference in runtime anomaly distributions (p = 0.0001) corroborates this: despite the normalized shared layer, MQTT and CoAP exhibit distinct behavioral signatures that the current model does not bridge. Feature drift analysis (legacy vs. behavioral vectors) identifies f06, f05, f04, f08, and f11 as the highest-drift dimensions (KL divergence $>$ 27.6), corresponding to rate, entropy, and reliability-level features most affected by the TCP-vs-UDP transport difference.
+
+Figure~\ref{fig:feature_drift} and Figure~\ref{fig:kl_divergence} further visualize this divergence. The drift plot shows persistent mismatch between legacy and behavioral feature representations for a subset of dimensions, while the KL heatmap identifies feature-class regions with the weakest MQTT-CoAP alignment. Together, these plots convert the transfer-gap result from a single scalar into an interpretable diagnostic map for future domain-adaptation work.
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{../ml-pipeline/figures/fig4_feature_drift.png}
+\caption{Legacy-vs-behavioral feature drift across runtime vectors. High-drift dimensions indicate where temporal behavioral encoding departs from legacy feature mappings.}
+\label{fig:feature_drift}
+\end{figure}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{../ml-pipeline/figures/fig7_kl_divergence.png}
+\caption{Symmetric KL divergence by feature and attack class (MQTT vs CoAP). Higher values indicate weaker cross-protocol alignment and explain zero-shot transfer degradation.}
+\label{fig:kl_divergence}
+\end{figure}
 
 \section{Limitations and Future Work}
 SentriX delivers a complete architecture and integrated system but has the following remaining limitations:
