@@ -2,7 +2,7 @@
 
 **Last Updated:** April 7, 2026  
 **Status:** Week 10 Complete - Production Ready for Evaluation  
-**Repository:** `/home/billy/X/SentriX`
+**Repository:** `SentriX`
 
 ---
 
@@ -95,45 +95,45 @@
 ┌──────────────────────────────────────────────────────────────┐
 │                     SentriX Proxy Core (C++)                 │
 ├──────────────────────────────────────────────────────────────┤
-│                                                               │
-│  ┌─────────────┐          ┌──────────────────────┐            │
-│  │  MQTT Client│──1884/TCP│ MQTT Protocol Module│            │
-│  └─────────────┘          └──────────↓───────────┘            │
-│                                      │                        │
-│  ┌─────────────┐          ┌──────────↓───────────┐            │
-│  │  CoAP Client│──5684/UDP│ CoAP Protocol Module│            │
-│  └─────────────┘          └──────────↓───────────┘            │
-│                                      │                        │
-│                           ┌──────────↓─────────────┐           │
-│                           │ Feature Mapper (33-dim) │          │
-│                           └──────────↓─────────────┘           │
-│                                      │                        │
-│         ┌─────────────────────────────┼─────────────────────┐│
-│         │  Detection Pipeline                               ││
-│         │  ┌────────────┐  ┌────────────┐  ┌────────────┐  ││
-│         │  │ Stage 1    │→ │ Stage 2    │→ │ Stage 3    │  ││
-│         │  │ Rules      │  │ ML Scoring │  │ Mitigation │  ││
-│         │  └────────────┘  └────────────┘  └────────────┘  ││
-│         └─────────────────────────────┬─────────────────────┘│
+│                                                              │
+│  ┌─────────────┐          ┌──────────────────────┐           │
+│  │  MQTT Client│──1884/TCP│ MQTT Protocol Module │           │
+│  └─────────────┘          └──────────↓───────────┘           │
+│                                      │                       │
+│  ┌─────────────┐          ┌──────────↓───────────┐           │
+│  │  CoAP Client│──5684/UDP│ CoAP Protocol Module │           │
+│  └─────────────┘          └──────────↓───────────┘           │
+│                                      │                       │
+│                           ┌──────────↓─────────────┐         │
+│                           │ Feature Mapper (33-dim)│         │
+│                           └──────────↓─────────────┘         │
+│                                      │                       │
+│         ┌────────────────────────────↓─────────────────────┐ │
+│         │  Detection Pipeline                              │ │
+│         │  ┌────────────┐  ┌────────────┐  ┌────────────┐  │ │
+│         │  │ Stage 1    │→ │ Stage 2    │→ │ Stage 3    │  │ │
+│         │  │ Rules      │  │ ML Scoring │  │ Mitigation │  │ │
+│         │  └────────────┘  └────────────┘  └────────────┘  │ │
+│         └─────────────────────────────┬────────────────────┘ │
 │                                       │                      │
-│                      ┌────────────────↓────────────────┐      │
-│                      │ Event Logging & Metrics Export  │      │
-│                      └────────────────┬────────────────┘      │
+│                      ┌────────────────↓────────────────┐     │
+│                      │ Event Logging & Metrics Export  │     │
+│                      └────────────────┬────────────────┘     │
 │                                       │                      │
-│  ┌─────────────┐          ┌──────────↓───────────┐            │
-│  │   MQTT      │──1883/TCP│  MQTT Broker         │            │
-│  │ Backend     │          │  (Mosquitto)         │            │
-│  └─────────────┘          └──────────────────────┘            │
-│                                                               │
-│  ┌─────────────┐          ┌──────────────────────┐            │
-│  │   CoAP      │──5683/UDP│  CoAP Backend        │            │
-│  │ Backend     │          │  (Californium)       │            │
-│  └─────────────┘          └──────────────────────┘            │
-│                                                               │
-│  Metrics/Events Export → `/tmp/sentrix_metrics.json`          │
-│                       → `/tmp/sentrix_events.jsonl`           │
-│                       → `/tmp/sentrix-week8/features.jsonl`   │
-│                                                               │
+│  ┌─────────────┐          ┌───────────↓──────────┐           │
+│  │   MQTT      │──1883/TCP│  MQTT Broker         │           │
+│  │ Backend     │          │  (Mosquitto)         │           │
+│  └─────────────┘          └──────────────────────┘           │
+│                                                              │
+│  ┌─────────────┐          ┌──────────────────────┐           │
+│  │   CoAP      │──5683/UDP│  CoAP Backend        │           │
+│  │ Backend     │          │  (Californium)       │           │
+│  └─────────────┘          └──────────────────────┘           │
+│                                                              │
+│  Metrics/Events Export → `/tmp/sentrix_metrics.json`         │
+│                       → `/tmp/sentrix_events.jsonl`          │
+│                       → `/tmp/sentrix-week8/features.jsonl`  │
+│                                                              │
 └──────────────────────────────────────────────────────────────┘
         ▲
         │ Metrics Polling (5s interval)
@@ -218,15 +218,10 @@
 ### Top-Level Files
 
 ```
-├── CODEBASE_OVERVIEW_ONBOARDING.md     # This file
-├── DEMO_CHEATSHEET_5MIN.md             # Quick 5-min demo script
-├── PROFESSOR_DEMO_GUIDE.md             # Detailed viva presentation guide
+├── CODEBASE_OVERVIEW.md                # This file
 ├── REPRODUCIBILITY.md                  # Reproducibility artifacts
-├── SETUP_CODING.md                     # Setup instructions (Week 2)
+├── SETUP_CODING.md                     # Setup instructions
 ├── Research_plan.md                    # Full research scope & objectives
-│
-├── config/                             # Configuration & schemas
-│   └── feature_schema.md               # 33-dim feature vector spec
 │
 ├── data/                               # Dataset workspace
 │   ├── raw/
@@ -309,7 +304,7 @@
 │   │   ├── sentrix_proxy               # Executable binary
 │   │   └── CMakeFiles/, Makefile, etc.
 │   │
-│   └── README.md                       # Proxy-specific documentation (does not exist yet)
+│   └── README.md                       # Proxy-specific documentation
 │
 ├── deploy/                             # Docker & infrastructure
 │   ├── docker-compose.yml              # Full stack orchestration
