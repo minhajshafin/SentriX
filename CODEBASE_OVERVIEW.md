@@ -321,27 +321,20 @@
 │       ├── metrics_api_stub.py         # Node.js wrapper + metrics HTTP endpoint
 │       └── metrics_server.js           # Actual Node.js API server
 │
-├── simulators/                         # Traffic generation & testing
-│   ├── requirements.txt                # Python dependencies for simulators
-│   │
-│   ├── common/
-│   │   ├── feature_schema.py           # 33-dim feature definition (shared)
-│   │   └── scenarios.py                # Scenario templates
-│   │
-│   ├── mqtt/
-│   │   ├── mqtt_benign.py              # Benign MQTT traffic patterns
-│   │   └── mqtt_attacks.py             # Attack scenario generators
-│   │
-│   └── coap/
-│       ├── coap_benign.py              # Benign CoAP traffic patterns
-│       └── coap_attacks.py             # CoAP attack scenarios
-│
-├── Research_Paper/                     # Manuscript & publication materials
-│   ├── conference_101719.tex           # LaTeX manuscript (IEEE format)
-│   ├── IEEEtran.cls                    # IEEE template
-│   └── (compiled PDF would go here)
-│
-└── .venv/                              # Python virtual environment (not tracked)
+└── simulators/                         # Traffic generation & testing
+    ├── requirements.txt                # Python dependencies for simulators
+    │
+    ├── common/
+    │   ├── feature_schema.py           # 33-dim feature definition (shared)
+    │   └── scenarios.py                # Scenario templates
+    │
+    ├── mqtt/
+    │   ├── mqtt_benign.py              # Benign MQTT traffic patterns
+    │   └── mqtt_attacks.py             # Attack scenario generators
+    │
+    └── coap/
+        ├── coap_benign.py              # Benign CoAP traffic patterns
+        └── coap_attacks.py             # CoAP attack scenarios
 ```
 
 ---

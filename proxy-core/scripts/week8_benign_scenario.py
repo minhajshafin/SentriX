@@ -31,7 +31,7 @@ def mqtt_subscribe_packet(packet_id: int, topic: str, qos: int = 1) -> bytes:
     payload += len(topic_bytes).to_bytes(2, "big") + topic_bytes
     payload += bytes([qos])
     remaining_length = len(payload)
-    return bytes([0x80, remaining_length]) + payload
+    return bytes([0x82, remaining_length]) + payload
 
 
 def mqtt_publish_packet(topic: str, payload_text: str = "", qos: int = 1) -> bytes:

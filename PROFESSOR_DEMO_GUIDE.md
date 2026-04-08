@@ -103,6 +103,15 @@ SENTRIX_FEATURE_DEBUG_PATH=/tmp/sentrix-week8/features.jsonl \
 ./build/sentrix_proxy
 ```
 
+```
+SENTRIX_ENABLE_BEHAVIORAL_WINDOWS=1 SENTRIX_MQTT_BROKER_HOST=127.0.0.1 SENTRIX_MQTT_BROKER_PORT=1883 SENTRIX_COAP_BACKEND_HOST=127.0.0.1 SENTRIX_COAP_BACKEND_PORT=5683 SENTRIX_MQTT_PROXY_PORT=1884 SENTRIX_COAP_PROXY_PORT=5684 SENTRIX_METRICS_PATH=/tmp/sentrix-week8/metrics.json SENTRIX_EVENTS_PATH=/tmp/sentrix-week8/events.jsonl SENTRIX_FEATURE_DEBUG_PATH=/tmp/sentrix-week8/features.jsonl ./build/sentrix_proxy
+```
+
+Strict :
+```
+SENTRIX_ENABLE_BEHAVIORAL_WINDOWS=1 SENTRIX_RULE_MSG_RATE_THRESHOLD=0.70 SENTRIX_INFERENCE_RATE_LIMIT_THRESHOLD=0.55 SENTRIX_INFERENCE_DROP_THRESHOLD=0.75 SENTRIX_MQTT_BROKER_HOST=127.0.0.1 SENTRIX_MQTT_BROKER_PORT=1883 SENTRIX_COAP_BACKEND_HOST=127.0.0.1 SENTRIX_COAP_BACKEND_PORT=5683 SENTRIX_MQTT_PROXY_PORT=1884 SENTRIX_COAP_PROXY_PORT=5684 SENTRIX_METRICS_PATH=/tmp/sentrix-week8/metrics.json SENTRIX_EVENTS_PATH=/tmp/sentrix-week8/events.jsonl SENTRIX_FEATURE_DEBUG_PATH=/tmp/sentrix-week8/features.jsonl ./build/sentrix_proxy
+```
+
 Expected logs:
 - Detection runtime config line
 - MQTT module listening on `1884`
@@ -148,6 +157,7 @@ What to say:
 ```bash
 cd /home/billy/X/SentriX
 python proxy-core/scripts/week8_benign_scenario.py
+python proxy-core/scripts/week8_attack_scenario.py
 ```
 
 Then verify:
