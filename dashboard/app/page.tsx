@@ -1,8 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { useEffect, useState, useCallback } from 'react';
+import {
+  PieChart, Pie, Cell,
+  BarChart, Bar,
+  XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
 
+/* ── Types ──────────────────────────────────────────────────────────── */
 type Metrics = {
   mqtt_msgs: number;
   coap_msgs: number;
@@ -16,81 +22,132 @@ type FeatureStats = {
   anomaly_stats: { min: number; max: number; mean: number; p95: number };
 };
 
+type EventEntry = {
+  ts?: string;
+  timestamp?: string;
+  type?: string;
+  level?: string;
+  msg?: string;
+  message?: string;
+  protocol?: string;
+  source_id?: string;
+  anomaly_score?: number;
+  action?: string;
+  [key: string]: unknown;
+};
+
+/* ── Custom Tooltip ─────────────────────────────────────────────────── */
+function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number; name: string }>; label?: string }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="custom-tooltip">
+      {label && <div className="label">{label}</div>}
+      {payload.map((p, i) => (
+        <div className="value" key={i}>
+          {typeof p.value === 'number' ? p.value.toFixed(4) : p.value}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ── Main Dashboard ─────────────────────────────────────────────────── */
 export default function Dashboard() {
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [featureStats, setFeatureStats] = useState<FeatureStats | null>(null);
+  const [events, setEvents] = useState<EventEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<string>('');
 
-  const metricsBase = process.env.NEXT_PUBLIC_METRICS_BASE_URL ?? 'http://localhost:8080';
+  const base = process.env.NEXT_PUBLIC_METRICS_BASE_URL ?? 'http://localhost:8080';
+
+  const fetchData = useCallback(async () => {
+    try {
+      setError(null);
+
+      const [metricsRes, statsRes, eventsRes] = await Promise.allSettled([
+        fetch(`${base}/metrics`),
+        fetch(`${base}/features/stats`),
+        fetch(`${base}/events`),
+      ]);
+
+      if (metricsRes.status === 'fulfilled' && metricsRes.value.ok) {
+        setMetrics(await metricsRes.value.json() as Metrics);
+      }
+      if (statsRes.status === 'fulfilled' && statsRes.value.ok) {
+        setFeatureStats(await statsRes.value.json() as FeatureStats);
+      }
+      if (eventsRes.status === 'fulfilled' && eventsRes.value.ok) {
+        const data = await eventsRes.value.json();
+        setEvents(Array.isArray(data?.events) ? data.events : []);
+      }
+
+      setLastUpdate(new Date().toLocaleTimeString());
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }, [base]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // Fetch metrics
-        const metricsRes = await fetch(`${metricsBase}/metrics`);
-        if (metricsRes.ok) {
-          setMetrics((await metricsRes.json()) as Metrics);
-        }
-
-        // Fetch feature stats
-        const statsRes = await fetch(`${metricsBase}/features/stats`);
-        if (statsRes.ok) {
-          setFeatureStats((await statsRes.json()) as FeatureStats);
-        }
-
-        setLastUpdate(new Date().toLocaleTimeString());
-      } catch (err) {
-        setError((err as Error).message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
-    const interval = setInterval(fetchData, 5000); // Refresh every 5s
-
+    const interval = setInterval(fetchData, 5000);
     return () => clearInterval(interval);
-  }, [metricsBase]);
+  }, [fetchData]);
 
+  /* ── Loading state ────────────────────────────────────────────────── */
   if (loading && !metrics) {
     return (
-      <main style={{ padding: '2rem' }}>
-        <div style={{ color: '#999' }}>Loading metrics...</div>
+      <main className="dashboard">
+        <div className="loading-screen">
+          <div className="loading-spinner" />
+          <div className="loading-text">Connecting to SentriX metrics…</div>
+        </div>
       </main>
     );
   }
 
+  /* ── Error state ──────────────────────────────────────────────────── */
   if (error && !metrics) {
     return (
-      <main style={{ padding: '2rem' }}>
-        <div style={{ color: '#d32f2f' }}>Connection error: {error}</div>
-        <p style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>
-          Make sure the metrics server is running: <code>node deploy/scripts/metrics_server.js</code>
-        </p>
+      <main className="dashboard">
+        <div className="error-screen">
+          <div className="error-icon">⚠️</div>
+          <div className="error-title">Connection Failed</div>
+          <div className="error-detail">
+            Unable to reach the metrics server. Make sure it&apos;s running and accessible.
+          </div>
+          <code className="error-code">python deploy/scripts/metrics_api_stub.py</code>
+        </div>
       </main>
     );
   }
 
+  /* ── No data ──────────────────────────────────────────────────────── */
   if (!metrics) {
     return (
-      <main style={{ padding: '2rem' }}>
-        <div style={{ color: '#666' }}>No metrics data available</div>
+      <main className="dashboard">
+        <div className="error-screen">
+          <div className="error-icon">📡</div>
+          <div className="error-title">No Data</div>
+          <div className="error-detail">
+            The metrics server is reachable but returned no data. Run a scenario script to generate traffic.
+          </div>
+        </div>
       </main>
     );
   }
 
-  // Prepare protocol distribution data
+  /* ── Derived data ─────────────────────────────────────────────────── */
+  const totalMessages = metrics.mqtt_msgs + metrics.coap_msgs;
+
   const protocolData = [
-    { name: 'MQTT', value: metrics.mqtt_msgs, fill: '#0ea5e9' },
-    { name: 'CoAP', value: metrics.coap_msgs, fill: '#f97316' },
+    { name: 'MQTT', value: metrics.mqtt_msgs, color: '#38bdf8' },
+    { name: 'CoAP', value: metrics.coap_msgs, color: '#fbbf24' },
   ];
 
-  // Prepare anomaly distribution data
   const anomalyData = featureStats
     ? [
         { name: 'Min', value: featureStats.anomaly_stats.min },
@@ -100,100 +157,289 @@ export default function Dashboard() {
       ]
     : [];
 
+  /* ── Event helpers ────────────────────────────────────────────────── */
+  function getEventBadge(ev: EventEntry): { label: string; className: string } {
+    const t = (ev.type ?? ev.level ?? '').toLowerCase();
+    if (t.includes('detect') || t.includes('attack') || t.includes('anomal')) {
+      return { label: 'Detection', className: 'event-badge detection' };
+    }
+    if (t.includes('warn')) {
+      return { label: 'Warning', className: 'event-badge warning' };
+    }
+    return { label: 'Info', className: 'event-badge info' };
+  }
+
+  function getEventTime(ev: EventEntry): string {
+    const raw = ev.ts ?? ev.timestamp ?? '';
+    if (!raw) return '—';
+    try {
+      return new Date(raw).toLocaleTimeString();
+    } catch {
+      return String(raw).slice(0, 19);
+    }
+  }
+
+  function getEventMessage(ev: EventEntry): string {
+    return ev.msg ?? ev.message ?? JSON.stringify(ev).slice(0, 120);
+  }
+
+  /* ── Render ───────────────────────────────────────────────────────── */
   return (
-    <main style={{ padding: '2rem', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-      <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ margin: '0 0 0.5rem 0' }}>SentriX Week 9 Dashboard</h1>
-        <p style={{ margin: '0', color: '#999', fontSize: '0.9rem' }}>
-          Real-time proxy metrics and feature statistics
-          {lastUpdate && ` • Last update: ${lastUpdate}`}
-        </p>
-      </div>
+    <main className="dashboard">
+      {/* ─── Header ──────────────────────────────────────────────────── */}
+      <header className="header">
+        <div className="header-left">
+          <div className="logo-area">
+            <div className="logo-icon">S</div>
+            <h1>SentriX Dashboard</h1>
+          </div>
+          <p className="header-subtitle">
+            Real-time IoT security proxy metrics &amp; detection telemetry
+          </p>
+        </div>
+        <div className="header-right">
+          <div className={`status-badge ${error ? 'error' : ''}`}>
+            <span className="status-dot" />
+            {error ? 'Degraded' : 'Live'}
+          </div>
+          {lastUpdate && (
+            <span className="update-time">{lastUpdate}</span>
+          )}
+        </div>
+      </header>
 
-      {/* Key Metrics Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
-        <div style={{ padding: '1.5rem', border: '1px solid #e5e7eb', borderRadius: '0.5rem', backgroundColor: '#f9fafb' }}>
-          <div style={{ fontSize: '0.875rem', color: '#666', marginBottom: '0.5rem' }}>MQTT Messages</div>
-          <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#0ea5e9' }}>{metrics.mqtt_msgs}</div>
+      {/* ─── KPI Metric Cards ────────────────────────────────────────── */}
+      <section className="metrics-grid">
+        <div className="card metric-card cyan" style={{ animationDelay: '0.05s' }}>
+          <div className="metric-label">📨 MQTT Messages</div>
+          <div className="metric-value cyan">{metrics.mqtt_msgs.toLocaleString()}</div>
+          <div className="metric-detail">
+            {totalMessages > 0
+              ? `${((metrics.mqtt_msgs / totalMessages) * 100).toFixed(1)}% of total traffic`
+              : 'No traffic yet'}
+          </div>
         </div>
-        <div style={{ padding: '1.5rem', border: '1px solid #e5e7eb', borderRadius: '0.5rem', backgroundColor: '#f9fafb' }}>
-          <div style={{ fontSize: '0.875rem', color: '#666', marginBottom: '0.5rem' }}>CoAP Messages</div>
-          <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#f97316' }}>{metrics.coap_msgs}</div>
-        </div>
-        <div style={{ padding: '1.5rem', border: '1px solid #e5e7eb', borderRadius: '0.5rem', backgroundColor: '#f9fafb' }}>
-          <div style={{ fontSize: '0.875rem', color: '#666', marginBottom: '0.5rem' }}>Detection Events</div>
-          <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#10b981' }}>{metrics.detections}</div>
-        </div>
-        <div style={{ padding: '1.5rem', border: '1px solid #e5e7eb', borderRadius: '0.5rem', backgroundColor: '#f9fafb' }}>
-          <div style={{ fontSize: '0.875rem', color: '#666', marginBottom: '0.5rem' }}>Latency P95</div>
-          <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#8b5cf6' }}>{metrics.latency_ms_p95.toFixed(1)} ms</div>
-        </div>
-      </div>
 
-      {/* Charts */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '2rem' }}>
+        <div className="card metric-card amber" style={{ animationDelay: '0.1s' }}>
+          <div className="metric-label">📡 CoAP Messages</div>
+          <div className="metric-value amber">{metrics.coap_msgs.toLocaleString()}</div>
+          <div className="metric-detail">
+            {totalMessages > 0
+              ? `${((metrics.coap_msgs / totalMessages) * 100).toFixed(1)}% of total traffic`
+              : 'No traffic yet'}
+          </div>
+        </div>
+
+        <div className="card metric-card rose" style={{ animationDelay: '0.15s' }}>
+          <div className="metric-label">🛡️ Detection Events</div>
+          <div className="metric-value rose">{metrics.detections.toLocaleString()}</div>
+          <div className="metric-detail">
+            {totalMessages > 0
+              ? `${((metrics.detections / totalMessages) * 100).toFixed(2)}% detection rate`
+              : 'Awaiting traffic'}
+          </div>
+        </div>
+
+        <div className="card metric-card violet" style={{ animationDelay: '0.2s' }}>
+          <div className="metric-label">⚡ Latency P95</div>
+          <div className="metric-value violet">
+            {metrics.latency_ms_p95.toFixed(1)}
+            <span className="metric-unit">ms</span>
+          </div>
+          <div className="metric-detail">95th percentile response time</div>
+        </div>
+      </section>
+
+      {/* ─── Charts Row ──────────────────────────────────────────────── */}
+      <section className="content-grid">
         {/* Protocol Distribution */}
-        <div style={{ padding: '1.5rem', border: '1px solid #e5e7eb', borderRadius: '0.5rem', backgroundColor: '#fafafa' }}>
-          <h2 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem' }}>Message Distribution</h2>
-          <ResponsiveContainer width="100%" height={250}>
-            <PieChart>
-              <Pie data={protocolData} cx="50%" cy="50%" labelLine={false} label={({ name, value }) => `${name}: ${value}`} outerRadius={80} fill="#8884d8" dataKey="value">
-                {protocolData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.fill} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+        <div className="card" style={{ animationDelay: '0.25s' }}>
+          <div className="card-title">
+            <span className="card-title-icon">📊</span> Protocol Distribution
+          </div>
+          <div className="chart-wrapper">
+            <ResponsiveContainer width="100%" height={240}>
+              <PieChart>
+                <Pie
+                  data={protocolData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={55}
+                  outerRadius={90}
+                  paddingAngle={4}
+                  dataKey="value"
+                  label={({ name, percent }: { name?: string; percent?: number }) => `${name ?? ''} ${((percent ?? 0) * 100).toFixed(0)}%`}
+                  labelLine={false}
+                  stroke="none"
+                >
+                  {protocolData.map((entry, i) => (
+                    <Cell key={i} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem', marginTop: '0.5rem' }}>
+            {protocolData.map((p) => (
+              <div key={p.name} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.78rem' }}>
+                <span style={{ width: 10, height: 10, borderRadius: '50%', background: p.color, display: 'inline-block' }} />
+                <span style={{ color: 'var(--text-secondary)' }}>{p.name}</span>
+                <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
+                  {p.value.toLocaleString()}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* Feature Statistics */}
-        {featureStats && (
-          <div style={{ padding: '1.5rem', border: '1px solid #e5e7eb', borderRadius: '0.5rem', backgroundColor: '#fafafa' }}>
-            <h2 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem' }}>Feature Vectors</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-              <div>
-                <div style={{ fontSize: '0.875rem', color: '#666' }}>Total Vectors</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{featureStats.total_vectors}</div>
+        {/* Feature Vector Stats */}
+        <div className="card" style={{ animationDelay: '0.3s' }}>
+          <div className="card-title">
+            <span className="card-title-icon">🧬</span> Feature Vectors
+          </div>
+          {featureStats ? (
+            <div className="stats-grid">
+              <div className="stat-item">
+                <div className="stat-label">Total Vectors</div>
+                <div className="stat-value" style={{ color: 'var(--text-primary)' }}>
+                  {featureStats.total_vectors.toLocaleString()}
+                </div>
               </div>
-              <div>
-                <div style={{ fontSize: '0.875rem', color: '#666' }}>MQTT Vectors</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#0ea5e9' }}>{featureStats.by_protocol.mqtt}</div>
+              <div className="stat-item">
+                <div className="stat-label">MQTT Vectors</div>
+                <div className="stat-value" style={{ color: 'var(--accent-cyan)' }}>
+                  {featureStats.by_protocol.mqtt.toLocaleString()}
+                </div>
               </div>
-              <div>
-                <div style={{ fontSize: '0.875rem', color: '#666' }}>CoAP Vectors</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#f97316' }}>{featureStats.by_protocol.coap}</div>
+              <div className="stat-item">
+                <div className="stat-label">CoAP Vectors</div>
+                <div className="stat-value" style={{ color: 'var(--accent-amber)' }}>
+                  {featureStats.by_protocol.coap.toLocaleString()}
+                </div>
               </div>
-              <div>
-                <div style={{ fontSize: '0.875rem', color: '#666' }}>Unknown Protocol</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{featureStats.by_protocol.unknown}</div>
+              <div className="stat-item">
+                <div className="stat-label">Unknown Protocol</div>
+                <div className="stat-value" style={{ color: 'var(--text-muted)' }}>
+                  {featureStats.by_protocol.unknown.toLocaleString()}
+                </div>
               </div>
             </div>
-          </div>
-        )}
-      </div>
-
-      {/* Anomaly Score Distribution */}
-      {featureStats && anomalyData.length > 0 && (
-        <div style={{ padding: '1.5rem', border: '1px solid #e5e7eb', borderRadius: '0.5rem', backgroundColor: '#fafafa', marginTop: '2rem' }}>
-          <h2 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem' }}>Anomaly Score Distribution</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={anomalyData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis domain={[0, 1]} />
-              <Tooltip formatter={(value) => (typeof value === 'number' ? value.toFixed(4) : value)} />
-              <Bar dataKey="value" fill="#8b5cf6" />
-            </BarChart>
-          </ResponsiveContainer>
+          ) : (
+            <div className="empty-state">
+              <div className="empty-state-icon">🔬</div>
+              <div className="empty-state-text">Feature stats unavailable — run a scenario to generate vectors</div>
+            </div>
+          )}
         </div>
-      )}
+      </section>
 
-      <div style={{ marginTop: '3rem', paddingTop: '1rem', borderTop: '1px solid #e5e7eb', fontSize: '0.875rem', color: '#666' }}>
-        <p style={{ margin: '0' }}>
-          📊 Metrics server: <code style={{ color: '#d946ef' }}>http://localhost:8080</code> • Proxy: <code style={{ color: '#d946ef' }}>localhost:1884/5684</code> • Auto-refresh: 5s
-        </p>
-      </div>
+      {/* ─── Anomaly Chart + Events ──────────────────────────────────── */}
+      <section className="content-grid">
+        {/* Anomaly Score Distribution */}
+        <div className="card" style={{ animationDelay: '0.35s' }}>
+          <div className="card-title">
+            <span className="card-title-icon">📈</span> Anomaly Score Distribution
+          </div>
+          {anomalyData.length > 0 ? (
+            <div className="chart-wrapper">
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={anomalyData} barSize={36}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fill: '#8b9dc3', fontSize: 12 }}
+                    axisLine={{ stroke: 'rgba(56,89,138,0.20)' }}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    domain={[0, 1]}
+                    tick={{ fill: '#8b9dc3', fontSize: 12 }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(v: number) => v.toFixed(1)}
+                  />
+                  <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(56,189,248,0.06)' }} />
+                  <defs>
+                    <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#a78bfa" stopOpacity={1} />
+                      <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.7} />
+                    </linearGradient>
+                  </defs>
+                  <Bar dataKey="value" fill="url(#barGrad)" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="empty-state">
+              <div className="empty-state-icon">📉</div>
+              <div className="empty-state-text">No anomaly data available yet</div>
+            </div>
+          )}
+        </div>
+
+        {/* Live Event Log */}
+        <div className="card" style={{ animationDelay: '0.4s' }}>
+          <div className="card-title">
+            <span className="card-title-icon">📋</span> Event Log
+            {events.length > 0 && (
+              <span style={{
+                marginLeft: 'auto',
+                fontSize: '0.65rem',
+                color: 'var(--text-muted)',
+                fontWeight: 500,
+                fontVariantNumeric: 'tabular-nums',
+              }}>
+                {events.length} events
+              </span>
+            )}
+          </div>
+          {events.length > 0 ? (
+            <div className="events-list">
+              {[...events].reverse().slice(0, 50).map((ev, i) => {
+                const badge = getEventBadge(ev);
+                return (
+                  <div className="event-item" key={i} style={{ animationDelay: `${i * 0.03}s` }}>
+                    <div className="event-header">
+                      <span className="event-time">{getEventTime(ev)}</span>
+                      <span className={badge.className}>{badge.label}</span>
+                    </div>
+                    <div className="event-message">{getEventMessage(ev)}</div>
+                    {(ev.protocol || ev.source_id || ev.anomaly_score !== undefined) && (
+                      <div className="event-detail">
+                        {ev.protocol && <span>protocol={ev.protocol} </span>}
+                        {ev.source_id && <span>src={ev.source_id} </span>}
+                        {ev.anomaly_score !== undefined && (
+                          <span>score={Number(ev.anomaly_score).toFixed(4)}</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="empty-state">
+              <div className="empty-state-icon">📭</div>
+              <div className="empty-state-text">
+                No events recorded yet. Events will appear here when the proxy processes traffic.
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ─── Footer ──────────────────────────────────────────────────── */}
+      <footer className="footer">
+        <div className="footer-info">
+          <span className="footer-tag">📊 Metrics: {base}</span>
+          <span className="footer-tag">🔌 MQTT: localhost:1884</span>
+          <span className="footer-tag">📡 CoAP: localhost:5684</span>
+        </div>
+        <div className="footer-info">
+          <span className="footer-tag">🔄 Auto-refresh: 5s</span>
+        </div>
+      </footer>
     </main>
   );
 }
