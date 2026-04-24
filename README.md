@@ -144,23 +144,6 @@ Unified feature schema:
 - shared behavioral features + protocol encoding + protocol-specific auxiliaries
 - schema reference: [config/feature_schema.md](config/feature_schema.md)
 
-## Reproducibility
-
-For exact reproduction of metrics, figures, and artifacts, follow:
-- [REPRODUCIBILITY.md](REPRODUCIBILITY.md)
-
-For detailed ML process documentation:
-- [ml-pipeline/README.md](ml-pipeline/README.md)
-
-For complete local setup instructions (Ubuntu/Debian, Arch Linux, macOS):
-- [SETUP_CODING.md](SETUP_CODING.md)
-
-## Demo and Presentation Docs
-
-- Fast 5-minute runbook: [DEMO_CHEATSHEET_5MIN.md](DEMO_CHEATSHEET_5MIN.md)
-- Full demo + viva script: [PROFESSOR_DEMO_GUIDE.md](PROFESSOR_DEMO_GUIDE.md)
-- Research scope and timeline: [Research_plan.md](Research_plan.md)
-
 ## Typical Development Commands
 
 Build proxy core:
@@ -189,16 +172,6 @@ Generate baseline traffic:
 ```bash
 python proxy-core/scripts/week8_benign_scenario.py
 ```
-
-## Current Research Snapshot
-
-Highlights from current artifacts:
-- Labeled observations: 11,209
-- Champion model: LightGBM
-- Grouped CV headline metrics: accuracy ~0.78, macro-F1 ~0.60
-- Runtime benign validation indicates conservative thresholds and low false-positive behavior in tested scenarios
-
-See detailed reports under [ml-pipeline/reports](ml-pipeline/reports).
 
 ## Notes
 

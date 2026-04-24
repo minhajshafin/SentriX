@@ -47,14 +47,6 @@ ml-pipeline/reports
 ml-pipeline/models
 ml-pipeline/figures
 
-# Research paper: keep only main tex source tracked
-Research_Paper/*
-!Research_Paper/conference_101719.tex
-# Common LaTeX build byproducts (for any tracked paper files)
-Research_Paper/*.aux
-Research_Paper/*.fdb_latexmk
-Research_Paper/*.fls
-Research_Paper/*.log
-Research_Paper/*.out
-Research_Paper/*.toc
-bb.txt
+
+Research_Paper/
+docs/

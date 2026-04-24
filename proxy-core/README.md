@@ -582,11 +582,3 @@ This codebase is already beyond a stub:
 
 The remaining work in the broader project is mostly around model quality, feature evolution, and evaluation rather than basic runtime scaffolding.
 
-## Related Documentation
-
-- [../README.md](../README.md)
-- [../SETUP_CODING.md](../SETUP_CODING.md)
-- [../REPRODUCIBILITY.md](../REPRODUCIBILITY.md)
-- [../ml-pipeline/README.md](../ml-pipeline/README.md)
-- [../config/feature_schema.md](../config/feature_schema.md)
-

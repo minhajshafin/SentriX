@@ -1441,25 +1441,6 @@ print(df.isnull().sum().sum())  # Should be 0
 
 ---
 
-## Additional Resources
-
-### Key Documentation Files
-
-- [Research Plan](Research_plan.md) - Full research objectives, threat model, timeline
-- [Setup Guide](SETUP_CODING.md) - Week 2 setup instructions
-- [Demo Cheatsheet](DEMO_CHEATSHEET_5MIN.md) - Quick 5-min live demo script
-- [Demo Guide](PROFESSOR_DEMO_GUIDE.md) - Detailed viva presentation guide
-- [Reproducibility](REPRODUCIBILITY.md) - Artifact reproducibility instructions
-- [Config Schema](config/feature_schema.md) - Feature vector specification
-
-### Key Reports
-
-- [Week 5: Baseline Results](ml-pipeline/reports/week5_baseline_results.md)
-- [Week 6: Model Selection](ml-pipeline/reports/week6_model_selections.md)
-- [Week 8: Benign Baseline](ml-pipeline/reports/week8_benign_baseline.md)
-- [Week 9: Integration Report](ml-pipeline/reports/week9_integration_report.md)
-- [Week 10: Statistical Analysis](ml-pipeline/reports/week10_analysis_report.md)
-
 ### Useful Commands
 
 ```bash
@@ -1516,22 +1497,6 @@ A: Measured at Week 8: <0.5ms per packet (feature extraction + ML inference). Ac
 
 **Q: Can I deploy off-device (e.g., in cloud)?**  
 A: Yes, proxy can run in any networked container. Latency will be higher due to network RTT. Consider edge deployment for <1ms guarantee.
-
----
-
-## Contact & Questions
-
-For detailed technical questions, refer to:
-1. **Code comments** in C++ and Python files
-2. **Weekly reports** (`ml-pipeline/reports/WEEK*.md`)
-3. **Research paper** (LaTeX in `Research_Paper/`)
-4. **Git commit history** (if available) for change rationale
-
----
-
-**Document Version:** 1.0  
-**Date:** April 7, 2026  
-**Status:** Production Ready (Week 10 Complete)
 
 ---
 
