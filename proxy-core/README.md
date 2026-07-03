@@ -179,6 +179,8 @@ All thresholds are unit-bounded floats in the range [0, 1].
 
 If enabled, the runtime uses the stateful behavioral feature path instead of the legacy normalization path. If unset, proxy core defaults to the legacy feature mapping.
 
+> **⚠️ Critical:** In legacy mode, `f00 (msg_rate)` is hardcoded to `1.0` for all traffic events. This always exceeds the Stage 1 rule threshold of `0.95`, causing **every packet to be dropped** — including benign traffic. Always set `SENTRIX_ENABLE_BEHAVIORAL_WINDOWS=1` for any live traffic experiment or production use.
+
 ## Feature Model
 
 Proxy core exposes a 33-dimensional normalized vector:
