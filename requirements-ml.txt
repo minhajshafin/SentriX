@@ -1,0 +1,32 @@
+# SentriX ML Pipeline — Python Dependencies
+# Install: uv pip install -r requirements-ml.txt
+
+# ── Core ──────────────────────────────────────────
+pandas>=2.2
+numpy>=1.26
+scipy>=1.14
+
+# ── Machine Learning ──────────────────────────────
+scikit-learn>=1.5
+lightgbm>=4.5
+xgboost>=2.1
+
+# ── Hyperparameter Tuning ─────────────────────────
+optuna>=4.0
+
+# ── Class Balancing ───────────────────────────────
+imbalanced-learn>=0.12
+
+# ── ONNX Export & Inference ───────────────────────
+onnx>=1.16
+onnxmltools>=1.12
+skl2onnx>=1.17
+onnxruntime>=1.19
+
+# ── Visualization ────────────────────────────────
+matplotlib>=3.9
+seaborn>=0.13
+
+# ── IoT Clients (for simulators) ──────────────────
+paho-mqtt>=2.1
+aiocoap
